@@ -10,7 +10,8 @@
     "postinstall": "nuxt prepare",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:migrate-data": "tsx prisma/migrate-data.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

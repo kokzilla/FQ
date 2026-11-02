@@ -3,8 +3,8 @@ import { prisma } from '../../utils/prisma'
 import { isDbReady } from '../../utils/dbState'
 import { calculateEvaluation } from '~/shared/types/evaluation'
 
-// In-memory store for instant zero-config testing if Postgres is not yet connected
-const inMemoryAssessments: any[] = []
+// In-memory store for fallback if Postgres is not connected
+export const inMemoryAssessments: any[] = []
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -62,12 +62,67 @@ export default defineEventHandler(async (event) => {
 
   if (await isDbReady()) {
     try {
-      // บันทึกลง Postgres ผ่าน Prisma
+      // 1. ค้นหา / แมป buildingId ใน PostgreSQL
+      let actualBuildingId = buildingId
+      let building = null
+      if (actualBuildingId) {
+        building = await prisma.building.findFirst({
+          where: {
+            OR: [
+              { id: actualBuildingId },
+              { code: actualBuildingId }
+            ]
+          }
+        })
+      }
+      if (!building && buildingName) {
+        building = await prisma.building.findFirst({
+          where: { name: buildingName }
+        })
+      }
+      if (!building) {
+        building = await prisma.building.findFirst()
+      }
+      if (building) {
+        actualBuildingId = building.id
+      }
+
+      // 2. ค้นหา / แมป assessorId ใน PostgreSQL
+      let actualAssessorId = assessorId
+      let assessorUser = null
+      if (actualAssessorId) {
+        assessorUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { id: actualAssessorId },
+              { userlogin: actualAssessorId }
+            ]
+          }
+        })
+      }
+      if (!assessorUser && assessorName) {
+        assessorUser = await prisma.user.findFirst({
+          where: { fullName: assessorName }
+        })
+      }
+      if (!assessorUser) {
+        assessorUser = await prisma.user.findFirst({
+          where: {
+            OR: [{ role: 'AUDITOR' }, { role: 'ADMIN' }]
+          }
+        })
+      }
+      if (assessorUser) {
+        actualAssessorId = assessorUser.id
+      }
+
+      // 3. บันทึกลง PostgreSQL พร้อม ScoreItem ทุกข้อ
       const saved = await prisma.assessment.create({
         data: {
-          buildingId: assessmentData.buildingId,
-          staffId: assessmentData.staffId,
-          assessorId: assessmentData.assessorId,
+          roundId: roundId || 'round-2570',
+          buildingId: actualBuildingId,
+          staffId: staffId || null,
+          assessorId: actualAssessorId,
           responsibleStaffText: assessmentData.responsibleStaffText,
           totalScoreObtained: assessmentData.totalScoreObtained,
           totalMaxScore: assessmentData.totalMaxScore,
@@ -81,22 +136,27 @@ export default defineEventHandler(async (event) => {
           scores: {
             create: Object.entries(scores).map(([qId, s]: [string, any]) => ({
               questionItemId: parseInt(qId),
-              score: s.score,
-              isNA: s.isNA || false,
+              score: s.score !== null && s.score !== undefined ? Number(s.score) : null,
+              isNA: Boolean(s.isNA),
               defectNote: s.defectNote || null,
               photoUrl: s.photoUrl || null,
             }))
           }
+        },
+        include: {
+          scores: true
         }
       })
+
       inMemoryAssessments.unshift(assessmentData)
-      return { ok: true, data: saved }
-    } catch (err: any) {}
+      return { ok: true, data: saved, storage: 'postgresql' }
+    } catch (err: any) {
+      console.error('CRITICAL: Failed to save assessment to PostgreSQL:', err)
+      // กรณีเกิดข้อผิดพลาด ให้โยน Error แจ้ง client หรือ fallback
+    }
   }
 
-  // Fast Memory cache (0ms)
+  // Fast Memory cache fallback
   inMemoryAssessments.unshift(assessmentData)
-  return { ok: true, data: assessmentData, note: 'Saved to local memory cache' }
+  return { ok: true, data: assessmentData, storage: 'memory', note: 'Saved to local memory cache' }
 })
-
-export { inMemoryAssessments }

@@ -541,6 +541,7 @@ async function submitAssessment() {
         buildingName: form.buildingName,
         staffId: form.staffId || null,
         responsibleStaffText: form.responsibleStaffText.trim(),
+        assessorId: userSession.value?.id || userSession.value?.userlogin || null,
         assessorName: form.assessorName,
         scores: form.scores,
         strengthsSummary: form.strengthsSummary,

@@ -193,7 +193,38 @@ async function main() {
     })
   }
 
-  console.log('SQLite database seed completed successfully.')
+  // 6. System Settings
+  await prisma.systemSetting.upsert({
+    where: { key: 'criteria_building' },
+    update: {},
+    create: {
+      key: 'criteria_building',
+      value: JSON.stringify({
+        greenMin: 4,
+        yellowMin: 2,
+        greenLabel: 'ดีเยี่ยม / ผ่านเกณฑ์มาตรฐาน',
+        yellowLabel: 'ปานกลาง / เฝ้าระวัง',
+        redLabel: 'ต้องปรับปรุงเร่งด่วน'
+      })
+    }
+  })
+
+  await prisma.systemSetting.upsert({
+    where: { key: 'criteria_staff' },
+    update: {},
+    create: {
+      key: 'criteria_staff',
+      value: JSON.stringify({
+        greenMin: 4,
+        yellowMin: 2,
+        greenLabel: 'ดีเยี่ยม / ผลงานดีเด่น',
+        yellowLabel: 'ปานกลาง / พอใช้',
+        redLabel: 'ต้องปรับปรุงเร่งด่วน'
+      })
+    }
+  })
+
+  console.log('Database seed completed successfully.')
 }
 
 main()
