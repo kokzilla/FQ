@@ -84,6 +84,7 @@ model Assessment {
   id                    String          @id @default(uuid())
   roundId               String?         @default("round-2570")
   buildingId            String
+  staffId               String?         // ID ผู้ปฏิบัติงานรายบุคคลที่ถูกประเมิน (กรณีเลือกจากฐานข้อมูล)
   assessorId            String
   responsibleStaffText  String          // รายชื่อผู้รับผิดชอบ ณ วันที่ประเมิน
   assessedAt            DateTime        @default(now())
@@ -139,4 +140,10 @@ model FindingAttachment {
   createdAt    DateTime   @default(now())
 
   assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String   // JSON string configuration
+  updatedAt DateTime @updatedAt
 }

@@ -57,15 +57,46 @@
             </select>
           </div>
 
-          <!-- Responsible Staff -->
+          <!-- Responsible Staff (Individual Selection) -->
           <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1.5">ชื่อผู้รับผิดชอบ / แม่บ้านประจำอาคาร</label>
-            <input
-              v-model="form.responsibleStaffText"
-              type="text"
-              placeholder="ระบุชื่อแม่บ้านหรือเลือกจากอาคาร"
-              class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-            />
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">ผู้ปฏิบัติงาน / แม่บ้านที่จะประเมิน (รายบุคคล) <span class="text-rose-500">*</span></label>
+            
+            <div v-if="currentBuildingStaffs.length > 0 && !isCustomStaff" class="space-y-1.5">
+              <select
+                v-model="selectedStaffId"
+                @change="onStaffSelectChange"
+                class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-200 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              >
+                <option value="" disabled>-- เลือกผู้ปฏิบัติงานรายบุคคล --</option>
+                <option v-for="s in currentBuildingStaffs" :key="s.id" :value="s.id">
+                  👤 {{ s.staffName }}
+                </option>
+                <option value="__CUSTOM__">➕ ระบุชื่ออื่น / ไม่อยู่ในรายชื่อ...</option>
+              </select>
+            </div>
+
+            <div v-else class="space-y-1.5">
+              <div class="flex items-center gap-1.5">
+                <input
+                  v-model="form.responsibleStaffText"
+                  type="text"
+                  placeholder="พิมพ์ชื่อ-สกุล ผู้ปฏิบัติงานรายบุคคล..."
+                  class="flex-1 text-sm px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                />
+                <button
+                  v-if="currentBuildingStaffs.length > 0"
+                  type="button"
+                  @click="isCustomStaff = false; selectedStaffId = ''"
+                  class="text-xs px-2.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors whitespace-nowrap"
+                  title="กลับไปเลือกจากรายชื่อ"
+                >
+                  เลือกจากรายชื่อ
+                </button>
+              </div>
+            </div>
+            <p v-if="form.responsibleStaffText" class="text-[11px] text-slate-400 mt-1">
+              กำลังประเมินรายบุคคล: <span class="text-indigo-600 font-semibold">{{ form.responsibleStaffText }}</span>
+            </p>
           </div>
 
           <!-- Date -->
@@ -236,6 +267,7 @@
       :evaluated-count="evaluationResult.evaluatedItems"
       :total-count="evaluationResult.totalItems"
       :na-count="evaluationResult.naItems"
+      :average-score="evaluationResult.averageScore"
       :percentage="evaluationResult.percentage"
       :grade-key="evaluationResult.gradeKey"
       :grade-label="evaluationResult.gradeLabel"
@@ -307,6 +339,8 @@ function showToast(message: string, type: 'success' | 'error' = 'success') {
 const activeTab = ref(1)
 const isSubmitting = ref(false)
 const selectedBuildingId = ref('')
+const selectedStaffId = ref('')
+const isCustomStaff = ref(false)
 const selectedRoundId = ref('round-2570')
 const availableRounds = ref<any[]>([])
 const buildings = ref<any[]>([])
@@ -315,6 +349,7 @@ const userSession = useCookie<any>('bru_user_session')
 // Form State
 const form = reactive({
   buildingName: '',
+  staffId: '',
   responsibleStaffText: '',
   assessmentDate: new Date().toISOString().split('T')[0],
   assessorName: userSession.value?.fullName || 'กรรมการผู้ตรวจประเมิน',
@@ -389,12 +424,41 @@ function setPhotoUrl(qId: number, url: string) {
   saveDraft()
 }
 
+const currentBuildingStaffs = computed(() => {
+  const b = buildings.value.find(item => item.id === selectedBuildingId.value)
+  return b?.staffs || []
+})
+
 function onBuildingChange() {
   const b = buildings.value.find(item => item.id === selectedBuildingId.value)
   if (b) {
     form.buildingName = b.name
+    isCustomStaff.value = false
     if (b.staffs && b.staffs.length > 0) {
-      form.responsibleStaffText = b.staffs.map((s: any) => s.staffName).join(', ')
+      selectedStaffId.value = b.staffs[0].id
+      form.staffId = b.staffs[0].id
+      form.responsibleStaffText = b.staffs[0].staffName
+    } else {
+      selectedStaffId.value = ''
+      form.staffId = ''
+      form.responsibleStaffText = ''
+      isCustomStaff.value = true
+    }
+  }
+  saveDraft()
+}
+
+function onStaffSelectChange() {
+  if (selectedStaffId.value === '__CUSTOM__') {
+    isCustomStaff.value = true
+    form.staffId = ''
+    form.responsibleStaffText = ''
+  } else {
+    isCustomStaff.value = false
+    const s = currentBuildingStaffs.value.find((item: any) => item.id === selectedStaffId.value)
+    if (s) {
+      form.staffId = s.id
+      form.responsibleStaffText = s.staffName
     }
   }
   saveDraft()
@@ -406,6 +470,8 @@ function saveDraft() {
   if (process.client) {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
       selectedBuildingId: selectedBuildingId.value,
+      selectedStaffId: selectedStaffId.value,
+      isCustomStaff: isCustomStaff.value,
       form
     }))
   }
@@ -418,6 +484,8 @@ function loadDraft() {
       try {
         const parsed = JSON.parse(draft)
         selectedBuildingId.value = parsed.selectedBuildingId || ''
+        selectedStaffId.value = parsed.selectedStaffId || ''
+        isCustomStaff.value = !!parsed.isCustomStaff
         Object.assign(form, parsed.form)
       } catch (e) {
         console.error('Failed to parse draft', e)
@@ -457,6 +525,11 @@ async function submitAssessment() {
     showToast('กรุณาเลือกอาคารที่ทำการตรวจก่อนส่งผล', 'error')
     return
   }
+  if (!form.responsibleStaffText || form.responsibleStaffText.trim() === '') {
+    activeTab.value = 1
+    showToast('กรุณาระบุหรือเลือกผู้ปฏิบัติงานรายบุคคลที่จะประเมิน', 'error')
+    return
+  }
 
   isSubmitting.value = true
   try {
@@ -466,7 +539,8 @@ async function submitAssessment() {
         roundId: selectedRoundId.value,
         buildingId: selectedBuildingId.value,
         buildingName: form.buildingName,
-        responsibleStaffText: form.responsibleStaffText,
+        staffId: form.staffId || null,
+        responsibleStaffText: form.responsibleStaffText.trim(),
         assessorName: form.assessorName,
         scores: form.scores,
         strengthsSummary: form.strengthsSummary,

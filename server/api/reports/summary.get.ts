@@ -1,18 +1,22 @@
 import { defineEventHandler, getQuery } from 'h3'
 import { inMemoryAssessments } from '../assessments/index.post'
 import { evaluationRounds } from '../rounds/index.get'
+import { prisma } from '../../utils/prisma'
+import { isDbReady } from '../../utils/dbState'
 import { EVALUATION_CATEGORIES, EVALUATION_QUESTIONS } from '../../../shared/constants/questions'
+import { getColorCriteriaSettings, evaluateColorGrade } from '../../utils/settings'
 
-// Seed realistic multi-committee mock assessments across rounds if empty
+// Seed realistic individual multi-committee mock assessments across rounds if empty
 function ensureMockAssessments() {
   if (inMemoryAssessments.length === 0) {
-    // อาคาร 15 รอบ 2570 - กรรมการ 2 คน
+    // อาคาร 15 รอบ 2570 - ผู้ปฏิบัติงานคนที่ 1: นางสมศรี ใจสะอาด (กรรมการ 2 คน)
     inMemoryAssessments.push({
       id: 'mock-1',
       roundId: 'round-2570',
       buildingId: 'b-15',
       buildingName: 'อาคาร 15 (เฉลิมพระเกียรติ 50 พรรษา มหาวชิราลงกรณ)',
-      responsibleStaffText: 'นางสมศรี ใจสะอาด, นางสมใจ รักษ์ดี',
+      staffId: 's1',
+      responsibleStaffText: 'นางสมศรี ใจสะอาด',
       assessorId: 'u2',
       assessorName: 'ดร.สมชาย ใจมั่น (ประธานกรรมการ)',
       assessedAt: '2026-10-15T09:30:00Z',
@@ -29,7 +33,8 @@ function ensureMockAssessments() {
       roundId: 'round-2570',
       buildingId: 'b-15',
       buildingName: 'อาคาร 15 (เฉลิมพระเกียรติ 50 พรรษา มหาวชิราลงกรณ)',
-      responsibleStaffText: 'นางสมศรี ใจสะอาด, นางสมใจ รักษ์ดี',
+      staffId: 's1',
+      responsibleStaffText: 'นางสมศรี ใจสะอาด',
       assessorId: 'u3',
       assessorName: 'ผศ.ณัฐพงษ์ สิทธิศักดิ์ (กรรมการ)',
       assessedAt: '2026-10-15T10:15:00Z',
@@ -42,12 +47,33 @@ function ensureMockAssessments() {
       scores: generateScores(89)
     })
 
+    // อาคาร 15 รอบ 2570 - ผู้ปฏิบัติงานคนที่ 2: นางสมใจ รักษ์ดี (กรรมการ 1 คน)
+    inMemoryAssessments.push({
+      id: 'mock-2b',
+      roundId: 'round-2570',
+      buildingId: 'b-15',
+      buildingName: 'อาคาร 15 (เฉลิมพระเกียรติ 50 พรรษา มหาวชิราลงกรณ)',
+      staffId: 's2',
+      responsibleStaffText: 'นางสมใจ รักษ์ดี',
+      assessorId: 'u2',
+      assessorName: 'ดร.สมชาย ใจมั่น',
+      assessedAt: '2026-10-16T11:00:00Z',
+      totalScoreObtained: 165,
+      totalMaxScore: 175,
+      percentage: 94.28,
+      grade: 'EXCELLENT',
+      gradeLabel: 'ดีเยี่ยม',
+      urgentProblems: '',
+      scores: generateScores(94)
+    })
+
     // อาคาร 18 (ARIT) รอบ 2570 - กรรมการ 2 คน
     inMemoryAssessments.push({
       id: 'mock-3',
       roundId: 'round-2570',
       buildingId: 'b-18',
       buildingName: 'อาคาร 18 (สำนักวิทยบริการและเทคโนโลยีสารสนเทศ ARIT)',
+      staffId: 's3',
       responsibleStaffText: 'นางปราณี ขยันยิ่ง',
       assessorId: 'u2',
       assessorName: 'ดร.สมชาย ใจมั่น',
@@ -65,6 +91,7 @@ function ensureMockAssessments() {
       roundId: 'round-2570',
       buildingId: 'b-18',
       buildingName: 'อาคาร 18 (สำนักวิทยบริการและเทคโนโลยีสารสนเทศ ARIT)',
+      staffId: 's3',
       responsibleStaffText: 'นางปราณี ขยันยิ่ง',
       assessorId: 'u3',
       assessorName: 'ผศ.ณัฐพงษ์ สิทธิศักดิ์',
@@ -84,6 +111,7 @@ function ensureMockAssessments() {
       roundId: 'round-2570',
       buildingId: 'b-22',
       buildingName: 'อาคาร 22 (อาคารวิทยาศาสตร์และเทคโนโลยี)',
+      staffId: 's4',
       responsibleStaffText: 'นางวันดี มีสุข',
       assessorId: 'u2',
       assessorName: 'ดร.สมชาย ใจมั่น',
@@ -97,12 +125,33 @@ function ensureMockAssessments() {
       scores: generateScores(67, true)
     })
 
+    // อาคาร 24 รอบ 2570
+    inMemoryAssessments.push({
+      id: 'mock-6',
+      roundId: 'round-2570',
+      buildingId: 'b-24',
+      buildingName: 'อาคาร 24 (อาคารปฏิบัติการทางวิทยาศาสตร์และนวัตกรรม)',
+      staffId: 's5',
+      responsibleStaffText: 'นางสุภาพรรณ บัวแก้ว',
+      assessorId: 'u3',
+      assessorName: 'ผศ.ณัฐพงษ์ สิทธิศักดิ์',
+      assessedAt: '2026-10-21T09:30:00Z',
+      totalScoreObtained: 154,
+      totalMaxScore: 175,
+      percentage: 88.0,
+      grade: 'GOOD',
+      gradeLabel: 'ดี',
+      urgentProblems: '',
+      scores: generateScores(88)
+    })
+
     // ข้อมูลย้อนหลังรอบปี 2568 (เพื่อใช้เปรียบเทียบ Cross-Round Trend)
     inMemoryAssessments.push({
       id: 'mock-prev-1',
       roundId: 'round-2568',
       buildingId: 'b-15',
       buildingName: 'อาคาร 15 (เฉลิมพระเกียรติ 50 พรรษา มหาวชิราลงกรณ)',
+      staffId: 's1',
       responsibleStaffText: 'นางสมศรี ใจสะอาด',
       assessorId: 'u2',
       assessorName: 'ดร.สมชาย ใจมั่น',
@@ -119,6 +168,7 @@ function ensureMockAssessments() {
       roundId: 'round-2568',
       buildingId: 'b-18',
       buildingName: 'อาคาร 18 (สำนักวิทยบริการและเทคโนโลยีสารสนเทศ ARIT)',
+      staffId: 's3',
       responsibleStaffText: 'นางปราณี ขยันยิ่ง',
       assessorId: 'u2',
       assessorName: 'ดร.สมชาย ใจมั่น',
@@ -135,6 +185,7 @@ function ensureMockAssessments() {
       roundId: 'round-2568',
       buildingId: 'b-22',
       buildingName: 'อาคาร 22 (อาคารวิทยาศาสตร์และเทคโนโลยี)',
+      staffId: 's4',
       responsibleStaffText: 'นางวันดี มีสุข',
       assessorId: 'u2',
       assessorName: 'ดร.สมชาย ใจมั่น',
@@ -172,14 +223,62 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const roundId = (query.roundId as string) || 'round-2570'
 
-  // กรองเฉพาะการประเมินในรอบที่เลือก
-  const currentAssessments = inMemoryAssessments.filter(a => (a.roundId || 'round-2570') === roundId)
+  // รวม assessments จากฐานข้อมูลถ้ามี
+  let allAssessments = [...inMemoryAssessments]
+  if (await isDbReady()) {
+    try {
+      const dbAssessments = await prisma.assessment.findMany({
+        include: {
+          building: true,
+          assessor: true,
+          scores: true
+        }
+      })
+      for (const d of dbAssessments) {
+        if (!allAssessments.some(a => a.id === d.id)) {
+          const scoresMap: any = {}
+          for (const s of d.scores) {
+            scoresMap[s.questionItemId] = {
+              score: s.score,
+              isNA: s.isNA,
+              defectNote: s.defectNote,
+              photoUrl: s.photoUrl
+            }
+          }
+          allAssessments.unshift({
+            id: d.id,
+            roundId: d.roundId || 'round-2570',
+            buildingId: d.buildingId,
+            buildingName: d.building?.name || 'อาคาร',
+            staffId: (d as any).staffId || null,
+            responsibleStaffText: d.responsibleStaffText,
+            assessorId: d.assessorId,
+            assessorName: d.assessor?.fullName || 'ผู้ตรวจประเมิน',
+            assessedAt: d.assessedAt.toISOString(),
+            totalScoreObtained: d.totalScoreObtained,
+            totalMaxScore: d.totalMaxScore,
+            percentage: d.percentage,
+            grade: d.grade,
+            gradeLabel: d.grade,
+            urgentProblems: d.urgentProblems || '',
+            scores: scoresMap
+          })
+        }
+      }
+    } catch (e) {}
+  }
 
-  // 1. คำนวณคะแนนเฉลี่ยรายข้อย่อยของแต่ละอาคาร (Item-level consensus)
+  // ดึงการตั้งค่าเกณฑ์สีล่าสุด
+  const colorCriteria = await getColorCriteriaSettings()
+
+  // กรองเฉพาะการประเมินในรอบที่เลือก
+  const currentAssessments = allAssessments.filter(a => (a.roundId || 'round-2570') === roundId)
+
+  // 1. คำนวณคะแนนเฉลี่ยรายข้อย่อยของแต่ละอาคาร (Building consensus)
   const buildingsMap: Record<string, {
     buildingId: string
     buildingName: string
-    responsibleStaff: string
+    responsibleStaffList: Set<string>
     auditors: string[]
     evaluations: any[]
   }> = {}
@@ -190,12 +289,15 @@ export default defineEventHandler(async (event) => {
       buildingsMap[bId] = {
         buildingId: a.buildingId,
         buildingName: a.buildingName,
-        responsibleStaff: a.responsibleStaffText,
+        responsibleStaffList: new Set(),
         auditors: [],
         evaluations: []
       }
     }
-    if (!buildingsMap[bId].auditors.includes(a.assessorName)) {
+    if (a.responsibleStaffText) {
+      buildingsMap[bId].responsibleStaffList.add(a.responsibleStaffText.trim())
+    }
+    if (a.assessorName && !buildingsMap[bId].auditors.includes(a.assessorName)) {
       buildingsMap[bId].auditors.push(a.assessorName)
     }
     buildingsMap[bId].evaluations.push(a)
@@ -230,50 +332,135 @@ export default defineEventHandler(async (event) => {
     const percentage = maxScore > 0 ? (totalScoreSum / maxScore) * 100 : 0
     const roundedPct = Math.round(percentage * 100) / 100
 
-    let grade = 'URGENT_ACTION'
-    let gradeLabel = 'ต้องเร่งแก้ไขและติดตามผล'
-    let gradeColor = 'red'
+    // คำนวณคะแนนเฉลี่ยสเกล 0-5.00 คะแนน
+    const avgScore = evaluatedQuestionsCount > 0 ? (totalScoreSum / evaluatedQuestionsCount) : 0
+    const roundedScore = Math.round(avgScore * 100) / 100
 
-    if (roundedPct >= 90) {
-      grade = 'EXCELLENT'
-      gradeLabel = 'ดีเยี่ยม'
-      gradeColor = 'emerald'
-    } else if (roundedPct >= 80) {
-      grade = 'GOOD'
-      gradeLabel = 'ดี'
-      gradeColor = 'green'
-    } else if (roundedPct >= 70) {
-      grade = 'FAIR'
-      gradeLabel = 'พอใช้ ควรปรับปรุงบางรายการ'
-      gradeColor = 'amber'
-    } else if (roundedPct >= 60) {
-      grade = 'IMPROVEMENT'
-      gradeLabel = 'ต้องปรับปรุง'
-      gradeColor = 'orange'
-    }
+    // ประเมินผลระดับสีและป้ายกำกับตามเกณฑ์สีอาคาร
+    const { gradeColor, gradeLabel, levelKey } = evaluateColorGrade(roundedScore, colorCriteria.building)
 
     const urgentNotes = b.evaluations.map(e => e.urgentProblems).filter(Boolean).join('; ')
 
     return {
       buildingId: b.buildingId,
       buildingName: b.buildingName,
-      responsibleStaff: b.responsibleStaff,
+      responsibleStaff: Array.from(b.responsibleStaffList).join(', ') || 'ไม่ระบุ',
       committeeCount: b.auditors.length,
       auditors: b.auditors,
       totalScoreObtained: Math.round(totalScoreSum * 10) / 10,
       totalMaxScore: maxScore,
+      score: roundedScore,
+      scoreFormatted: roundedScore.toFixed(2),
       percentage: roundedPct,
-      grade,
+      grade: levelKey,
       gradeLabel,
       gradeColor,
       urgentNotes,
       itemAverages
     }
-  }).sort((a, b) => b.percentage - a.percentage)
+  }).sort((a, b) => b.score - a.score)
 
-  // 2. การเปรียบเทียบแนวโน้มข้ามรอบประเมิน (Cross-Round Trend Comparison)
+  // 2. คำนวณคะแนนเฉลี่ยรายบุคคลของผู้ปฏิบัติงาน (Individual Staff Consensus)
+  const staffMap: Record<string, {
+    staffKey: string
+    staffId: string | null
+    staffName: string
+    buildingId: string
+    buildingName: string
+    auditors: string[]
+    evaluations: any[]
+  }> = {}
+
+  for (const a of currentAssessments) {
+    const sName = (a.responsibleStaffText || 'ไม่ระบุ').trim()
+    const bId = a.buildingId || a.buildingName || ''
+    const staffKey = `${bId}___${sName}`
+
+    if (!staffMap[staffKey]) {
+      staffMap[staffKey] = {
+        staffKey,
+        staffId: a.staffId || null,
+        staffName: sName,
+        buildingId: a.buildingId || '',
+        buildingName: a.buildingName || '',
+        auditors: [],
+        evaluations: []
+      }
+    }
+    if (a.assessorName && !staffMap[staffKey].auditors.includes(a.assessorName)) {
+      staffMap[staffKey].auditors.push(a.assessorName)
+    }
+    staffMap[staffKey].evaluations.push(a)
+  }
+
+  const staffAverages = Object.values(staffMap).map(s => {
+    let totalScoreSum = 0
+    let evaluatedQuestionsCount = 0
+    const itemAverages: Record<number, number> = {}
+
+    for (let qId = 1; qId <= 35; qId++) {
+      let qScoresTotal = 0
+      let qVotersCount = 0
+
+      for (const ev of s.evaluations) {
+        const item = ev.scores?.[qId]
+        if (item && !item.isNA && item.score !== null && item.score !== undefined) {
+          qScoresTotal += item.score
+          qVotersCount++
+        }
+      }
+
+      if (qVotersCount > 0) {
+        const qAvg = qScoresTotal / qVotersCount
+        itemAverages[qId] = Math.round(qAvg * 100) / 100
+        totalScoreSum += qAvg
+        evaluatedQuestionsCount++
+      }
+    }
+
+    const maxScore = evaluatedQuestionsCount * 5
+    const percentage = maxScore > 0 ? (totalScoreSum / maxScore) * 100 : 0
+    const roundedPct = Math.round(percentage * 100) / 100
+
+    // คำนวณคะแนนเฉลี่ยสเกล 0-5.00 คะแนน
+    const avgScore = evaluatedQuestionsCount > 0 ? (totalScoreSum / evaluatedQuestionsCount) : 0
+    const roundedScore = Math.round(avgScore * 100) / 100
+
+    // ประเมินผลระดับสีและป้ายกำกับตามเกณฑ์สีบุคลากร
+    const { gradeColor, gradeLabel, levelKey } = evaluateColorGrade(roundedScore, colorCriteria.staff)
+
+    const urgentNotes = s.evaluations.map(e => e.urgentProblems).filter(Boolean).join('; ')
+
+    return {
+      staffKey: s.staffKey,
+      staffId: s.staffId,
+      staffName: s.staffName,
+      buildingId: s.buildingId,
+      buildingName: s.buildingName,
+      committeeCount: s.auditors.length,
+      auditors: s.auditors,
+      totalScoreObtained: Math.round(totalScoreSum * 10) / 10,
+      totalMaxScore: maxScore,
+      score: roundedScore,
+      scoreFormatted: roundedScore.toFixed(2),
+      percentage: roundedPct,
+      grade: levelKey,
+      gradeLabel,
+      gradeColor,
+      urgentNotes,
+      evaluationsCount: s.evaluations.length,
+      evaluations: s.evaluations.map(e => ({
+        id: e.id,
+        assessorName: e.assessorName,
+        score: e.totalMaxScore > 0 ? (e.totalScoreObtained / (e.totalMaxScore / 5)).toFixed(2) : '0.00',
+        assessedAt: e.assessedAt
+      }))
+    }
+  }).sort((a, b) => b.score - a.score)
+
+  // 3. การเปรียบเทียบแนวโน้มข้ามรอบประเมิน (Cross-Round Trend Comparison)
   const previousRoundId = 'round-2568'
-  const previousAssessments = inMemoryAssessments.filter(a => a.roundId === previousRoundId)
+  const previousAssessments = allAssessments.filter(a => a.roundId === previousRoundId)
 
   const trendComparison = buildingAverages.map(curr => {
     const prevMatches = previousAssessments.filter(a => a.buildingId === curr.buildingId || a.buildingName === curr.buildingName)
@@ -302,7 +489,7 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  // 3. วิเคราะห์จุดบกพร่องและความเสี่ยงเร่งด่วนตามหมวด (Category Defect Hotspots)
+  // 4. วิเคราะห์จุดบกพร่องและความเสี่ยงเร่งด่วนตามหมวด (Category Defect Hotspots)
   const categoryStats = EVALUATION_CATEGORIES.map(cat => {
     const catQuestions = EVALUATION_QUESTIONS.filter(q => q.categoryId === cat.id)
     const qIds = catQuestions.map(q => q.id)
@@ -340,7 +527,9 @@ export default defineEventHandler(async (event) => {
     ok: true,
     currentRoundId: roundId,
     availableRounds: evaluationRounds,
+    colorCriteria,
     buildingAverages,
+    staffAverages,
     trendComparison,
     categoryStats
   }

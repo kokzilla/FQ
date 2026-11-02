@@ -51,6 +51,24 @@
         >
           📝 4. จัดการข้อคำถามในหมวด
         </button>
+
+        <button
+          type="button"
+          @click="adminTab = 'criteria-building'"
+          class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
+          :class="adminTab === 'criteria-building' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+        >
+          🎨 5. เกณฑ์สีสำหรับอาคาร
+        </button>
+
+        <button
+          type="button"
+          @click="adminTab = 'criteria-staff'"
+          class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
+          :class="adminTab === 'criteria-staff' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+        >
+          👤 6. เกณฑ์สีสำหรับบุคลากร
+        </button>
       </div>
 
       <!-- TAB 1: Evaluation Rounds Management -->
@@ -467,6 +485,306 @@
               ไม่มีข้อคำถามในหมวดนี้
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: Building Color Criteria -->
+      <section v-else-if="adminTab === 'criteria-building'" class="space-y-5">
+        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-5">
+          <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold mb-1">
+                <span>🎨 เกณฑ์สีสำหรับอาคาร</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900">กำหนดเกณฑ์คะแนนและป้ายกำกับสี (รายอาคาร)</h3>
+              <p class="text-xs text-slate-500">ปรับเปลี่ยนช่วงคะแนนประเมินเฉลี่ย (0 - 5.00 คะแนน) และข้อความกำกับสำหรับรายงานสรุปคะแนนของอาคาร</p>
+            </div>
+            <button
+              type="button"
+              @click="resetBuildingCriteria"
+              class="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors self-start sm:self-auto"
+            >
+              🔄 คืนค่าเริ่มต้น
+            </button>
+          </div>
+
+          <form @submit.prevent="saveBuildingCriteria" class="space-y-4">
+            <!-- GREEN TIER -->
+            <div class="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-200/80 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-sm"></span>
+                  <span class="text-sm font-bold text-emerald-950">ระดับสีเขียว (ผ่านเกณฑ์มาตรฐาน / ดีเยี่ยม)</span>
+                </div>
+                <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  พรีวิว: {{ buildingCriteria.greenLabel || 'ดีเยี่ยม' }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-emerald-900 mb-1">คะแนนขั้นต่ำ (ตั้งแต่คะแนนนี้ขึ้นไป)</label>
+                  <div class="relative">
+                    <input
+                      v-model.number="buildingCriteria.greenMin"
+                      type="number"
+                      step="0.05"
+                      min="0"
+                      max="5"
+                      required
+                      class="w-full text-sm px-3.5 py-2 rounded-xl border border-emerald-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                    <span class="absolute right-3 top-2 text-xs text-slate-400">/ 5.00</span>
+                  </div>
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-emerald-900 mb-1">ป้ายข้อความกำกับสถานะ</label>
+                  <input
+                    v-model="buildingCriteria.greenLabel"
+                    type="text"
+                    required
+                    placeholder="เช่น ดีเยี่ยม / ผ่านเกณฑ์มาตรฐาน"
+                    class="w-full text-sm px-3.5 py-2 rounded-xl border border-emerald-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- YELLOW TIER -->
+            <div class="p-4 rounded-2xl bg-amber-50/40 border border-amber-200/80 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-sm"></span>
+                  <span class="text-sm font-bold text-amber-950">ระดับสีเหลือง (เฝ้าระวัง / ปานกลาง)</span>
+                </div>
+                <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                  พรีวิว: {{ buildingCriteria.yellowLabel || 'ปานกลาง' }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-amber-900 mb-1">
+                    คะแนนขั้นต่ำ (ระหว่าง {{ buildingCriteria.yellowMin }} ถึง &lt; {{ buildingCriteria.greenMin }})
+                  </label>
+                  <div class="relative">
+                    <input
+                      v-model.number="buildingCriteria.yellowMin"
+                      type="number"
+                      step="0.05"
+                      min="0"
+                      max="5"
+                      required
+                      class="w-full text-sm px-3.5 py-2 rounded-xl border border-amber-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                    />
+                    <span class="absolute right-3 top-2 text-xs text-slate-400">/ 5.00</span>
+                  </div>
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-amber-900 mb-1">ป้ายข้อความกำกับสถานะ</label>
+                  <input
+                    v-model="buildingCriteria.yellowLabel"
+                    type="text"
+                    required
+                    placeholder="เช่น ปานกลาง / เฝ้าระวัง"
+                    class="w-full text-sm px-3.5 py-2 rounded-xl border border-amber-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- RED TIER -->
+            <div class="p-4 rounded-2xl bg-rose-50/40 border border-rose-200/80 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="w-3.5 h-3.5 rounded-full bg-rose-500 shadow-sm"></span>
+                  <span class="text-sm font-bold text-rose-950">ระดับสีแดง (ต้องปรับปรุงเร่งด่วน)</span>
+                </div>
+                <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-rose-100 text-rose-800 border border-rose-200">
+                  พรีวิว: {{ buildingCriteria.redLabel || 'ต้องปรับปรุงเร่งด่วน' }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-rose-900 mb-1">ช่วงคะแนนที่จัดอยู่ในเกณฑ์นี้</label>
+                  <div class="w-full text-sm px-3.5 py-2 rounded-xl border border-rose-200 bg-rose-50/60 font-semibold text-rose-800">
+                    ต่ำกว่า {{ buildingCriteria.yellowMin }} คะแนน
+                  </div>
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-rose-900 mb-1">ป้ายข้อความกำกับสถานะ</label>
+                  <input
+                    v-model="buildingCriteria.redLabel"
+                    type="text"
+                    required
+                    placeholder="เช่น ต้องปรับปรุงเร่งด่วน"
+                    class="w-full text-sm px-3.5 py-2 rounded-xl border border-rose-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end pt-2">
+              <button
+                type="submit"
+                :disabled="isSavingCriteria"
+                class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center space-x-1.5 transition-all disabled:opacity-50"
+              >
+                <span>💾 บันทึกเกณฑ์สีสำหรับอาคาร</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB 6: Staff Color Criteria -->
+      <section v-else-if="adminTab === 'criteria-staff'" class="space-y-5">
+        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-5">
+          <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 border border-purple-100 text-purple-700 text-xs font-semibold mb-1">
+                <span>👤 เกณฑ์สีสำหรับบุคลากร</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900">กำหนดเกณฑ์คะแนนและป้ายกำกับสี (รายบุคลากร/แม่บ้าน)</h3>
+              <p class="text-xs text-slate-500">ปรับเปลี่ยนช่วงคะแนนประเมินเฉลี่ย (0 - 5.00 คะแนน) และข้อความกำกับสำหรับรายงานสรุปรายบุคคลของผู้ปฏิบัติงาน</p>
+            </div>
+            <button
+              type="button"
+              @click="resetStaffCriteria"
+              class="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors self-start sm:self-auto"
+            >
+              🔄 คืนค่าเริ่มต้น
+            </button>
+          </div>
+
+          <form @submit.prevent="saveStaffCriteria" class="space-y-4">
+            <!-- GREEN TIER -->
+            <div class="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-200/80 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-sm"></span>
+                  <span class="text-sm font-bold text-emerald-950">ระดับสีเขียว (ผลงานดีเด่น / ดีเยี่ยม)</span>
+                </div>
+                <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  พรีวิว: {{ staffCriteria.greenLabel || 'ดีเยี่ยม' }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-emerald-900 mb-1">คะแนนขั้นต่ำ (ตั้งแต่คะแนนนี้ขึ้นไป)</label>
+                  <div class="relative">
+                    <input
+                      v-model.number="staffCriteria.greenMin"
+                      type="number"
+                      step="0.05"
+                      min="0"
+                      max="5"
+                      required
+                      class="w-full text-sm px-3.5 py-2 rounded-xl border border-emerald-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                    <span class="absolute right-3 top-2 text-xs text-slate-400">/ 5.00</span>
+                  </div>
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-emerald-900 mb-1">ป้ายข้อความกำกับสถานะ</label>
+                  <input
+                    v-model="staffCriteria.greenLabel"
+                    type="text"
+                    required
+                    placeholder="เช่น ดีเยี่ยม / ผลงานดีเด่น"
+                    class="w-full text-sm px-3.5 py-2 rounded-xl border border-emerald-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- YELLOW TIER -->
+            <div class="p-4 rounded-2xl bg-amber-50/40 border border-amber-200/80 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-sm"></span>
+                  <span class="text-sm font-bold text-amber-950">ระดับสีเหลือง (ปานกลาง / พอใช้)</span>
+                </div>
+                <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                  พรีวิว: {{ staffCriteria.yellowLabel || 'ปานกลาง' }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-amber-900 mb-1">
+                    คะแนนขั้นต่ำ (ระหว่าง {{ staffCriteria.yellowMin }} ถึง &lt; {{ staffCriteria.greenMin }})
+                  </label>
+                  <div class="relative">
+                    <input
+                      v-model.number="staffCriteria.yellowMin"
+                      type="number"
+                      step="0.05"
+                      min="0"
+                      max="5"
+                      required
+                      class="w-full text-sm px-3.5 py-2 rounded-xl border border-amber-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                    />
+                    <span class="absolute right-3 top-2 text-xs text-slate-400">/ 5.00</span>
+                  </div>
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-amber-900 mb-1">ป้ายข้อความกำกับสถานะ</label>
+                  <input
+                    v-model="staffCriteria.yellowLabel"
+                    type="text"
+                    required
+                    placeholder="เช่น ปานกลาง / พอใช้"
+                    class="w-full text-sm px-3.5 py-2 rounded-xl border border-amber-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- RED TIER -->
+            <div class="p-4 rounded-2xl bg-rose-50/40 border border-rose-200/80 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="w-3.5 h-3.5 rounded-full bg-rose-500 shadow-sm"></span>
+                  <span class="text-sm font-bold text-rose-950">ระดับสีแดง (ต้องปรับปรุงเร่งด่วน)</span>
+                </div>
+                <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-rose-100 text-rose-800 border border-rose-200">
+                  พรีวิว: {{ staffCriteria.redLabel || 'ต้องปรับปรุงเร่งด่วน' }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-rose-900 mb-1">ช่วงคะแนนที่จัดอยู่ในเกณฑ์นี้</label>
+                  <div class="w-full text-sm px-3.5 py-2 rounded-xl border border-rose-200 bg-rose-50/60 font-semibold text-rose-800">
+                    ต่ำกว่า {{ staffCriteria.yellowMin }} คะแนน
+                  </div>
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-rose-900 mb-1">ป้ายข้อความกำกับสถานะ</label>
+                  <input
+                    v-model="staffCriteria.redLabel"
+                    type="text"
+                    required
+                    placeholder="เช่น ต้องปรับปรุงเร่งด่วน"
+                    class="w-full text-sm px-3.5 py-2 rounded-xl border border-rose-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end pt-2">
+              <button
+                type="submit"
+                :disabled="isSavingCriteria"
+                class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center space-x-1.5 transition-all disabled:opacity-50"
+              >
+                <span>💾 บันทึกเกณฑ์สีสำหรับบุคลากร</span>
+              </button>
+            </div>
+          </form>
         </div>
       </section>
 
@@ -1157,8 +1475,99 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 
-const adminTab = ref<'rounds' | 'sso' | 'buildings' | 'questions'>('rounds')
+const adminTab = ref<'rounds' | 'sso' | 'buildings' | 'questions' | 'criteria-building' | 'criteria-staff'>('rounds')
 const currentUserSession = useCookie<any>('bru_user_session')
+
+// ========================
+// COLOR CRITERIA MANAGEMENT
+// ========================
+const buildingCriteria = reactive({
+  greenMin: 4.0,
+  yellowMin: 2.0,
+  greenLabel: 'ดีเยี่ยม / ผ่านเกณฑ์มาตรฐาน',
+  yellowLabel: 'ปานกลาง / เฝ้าระวัง',
+  redLabel: 'ต้องปรับปรุงเร่งด่วน'
+})
+
+const staffCriteria = reactive({
+  greenMin: 4.0,
+  yellowMin: 2.0,
+  greenLabel: 'ดีเยี่ยม / ผลงานดีเด่น',
+  yellowLabel: 'ปานกลาง / พอใช้',
+  redLabel: 'ต้องปรับปรุงเร่งด่วน'
+})
+
+const isSavingCriteria = ref(false)
+
+async function fetchColorCriteria() {
+  try {
+    const res: any = await $fetch('/api/settings/color-criteria')
+    if (res?.data) {
+      if (res.data.building) Object.assign(buildingCriteria, res.data.building)
+      if (res.data.staff) Object.assign(staffCriteria, res.data.staff)
+    }
+  } catch (err) {
+    console.error('Failed to load criteria', err)
+  }
+}
+
+async function saveBuildingCriteria() {
+  if (buildingCriteria.greenMin <= buildingCriteria.yellowMin) {
+    showToast('คะแนนขั้นต่ำสีเขียวต้องมากกว่าสีเหลือง', 'error')
+    return
+  }
+  isSavingCriteria.value = true
+  try {
+    const res: any = await $fetch('/api/settings/color-criteria', {
+      method: 'PUT',
+      body: { building: buildingCriteria }
+    })
+    if (res?.success) {
+      showToast('บันทึกเกณฑ์สีสำหรับอาคารสำเร็จ!')
+    }
+  } catch (err: any) {
+    showToast('เกิดข้อผิดพลาดในการบันทึก', 'error')
+  } finally {
+    isSavingCriteria.value = false
+  }
+}
+
+async function saveStaffCriteria() {
+  if (staffCriteria.greenMin <= staffCriteria.yellowMin) {
+    showToast('คะแนนขั้นต่ำสีเขียวต้องมากกว่าสีเหลือง', 'error')
+    return
+  }
+  isSavingCriteria.value = true
+  try {
+    const res: any = await $fetch('/api/settings/color-criteria', {
+      method: 'PUT',
+      body: { staff: staffCriteria }
+    })
+    if (res?.success) {
+      showToast('บันทึกเกณฑ์สีสำหรับบุคลากรสำเร็จ!')
+    }
+  } catch (err: any) {
+    showToast('เกิดข้อผิดพลาดในการบันทึก', 'error')
+  } finally {
+    isSavingCriteria.value = false
+  }
+}
+
+function resetBuildingCriteria() {
+  buildingCriteria.greenMin = 4.0
+  buildingCriteria.yellowMin = 2.0
+  buildingCriteria.greenLabel = 'ดีเยี่ยม / ผ่านเกณฑ์มาตรฐาน'
+  buildingCriteria.yellowLabel = 'ปานกลาง / เฝ้าระวัง'
+  buildingCriteria.redLabel = 'ต้องปรับปรุงเร่งด่วน'
+}
+
+function resetStaffCriteria() {
+  staffCriteria.greenMin = 4.0
+  staffCriteria.yellowMin = 2.0
+  staffCriteria.greenLabel = 'ดีเยี่ยม / ผลงานดีเด่น'
+  staffCriteria.yellowLabel = 'ปานกลาง / พอใช้'
+  staffCriteria.redLabel = 'ต้องปรับปรุงเร่งด่วน'
+}
 
 // ========================
 // TOAST NOTIFICATION
@@ -1745,6 +2154,7 @@ onMounted(() => {
   fetchStaffPool()
   fetchQuestions()
   searchSsoUsers()
+  fetchColorCriteria()
 })
 </script>
 

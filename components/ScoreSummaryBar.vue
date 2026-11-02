@@ -15,7 +15,7 @@
         <div class="flex flex-col">
           <span class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">ผลคะแนนรวม</span>
           <div class="flex items-center space-x-2">
-            <span class="text-base font-bold text-slate-900">{{ percentage.toFixed(1) }}%</span>
+            <span class="text-base font-bold text-slate-900">{{ averageScore.toFixed(2) }} / 5.00</span>
             <span
               class="px-2 py-0.5 text-xs font-semibold rounded-full"
               :class="gradeBadgeClass"
@@ -34,25 +34,27 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   evaluatedCount: number
   totalCount: number
   naCount: number
-  percentage: number
+  averageScore?: number
+  percentage?: number
   gradeKey: string
   gradeLabel: string
-}>()
+}>(), {
+  averageScore: 0,
+  percentage: 0
+})
 
 const gradeBadgeClass = computed(() => {
   switch (props.gradeKey) {
     case 'EXCELLENT':
+    case 'GREEN':
       return 'bg-emerald-50 text-emerald-700 border border-emerald-200'
     case 'GOOD':
-      return 'bg-green-50 text-green-700 border border-green-200'
-    case 'FAIR':
+    case 'YELLOW':
       return 'bg-amber-50 text-amber-700 border border-amber-200'
-    case 'IMPROVEMENT':
-      return 'bg-orange-50 text-orange-700 border border-orange-200'
     default:
       return 'bg-rose-50 text-rose-700 border border-rose-200'
   }

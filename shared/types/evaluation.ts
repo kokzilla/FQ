@@ -27,6 +27,7 @@ export interface EvaluationResult {
   totalScoreObtained: number
   totalMaxScore: number
   percentage: number
+  averageScore: number
   gradeKey: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'IMPROVEMENT' | 'URGENT_ACTION'
   gradeLabel: string
   gradeColor: 'emerald' | 'green' | 'amber' | 'orange' | 'red'
@@ -52,27 +53,24 @@ export function calculateEvaluation(
   const totalMaxScore = evaluatedItems * 5
   const percentage = totalMaxScore > 0 ? (totalScoreObtained / totalMaxScore) * 100 : 0
   const roundedPct = Math.round(percentage * 100) / 100
+  const averageScore = evaluatedItems > 0 ? Math.round((totalScoreObtained / evaluatedItems) * 100) / 100 : 0
 
   let gradeKey: EvaluationResult['gradeKey'] = 'URGENT_ACTION'
-  let gradeLabel = 'ต้องเร่งแก้ไขและติดตามผล'
+  let gradeLabel = 'ต้องปรับปรุงเร่งด่วน'
   let gradeColor: EvaluationResult['gradeColor'] = 'red'
 
-  if (roundedPct >= 90) {
+  if (averageScore >= 4.0) {
     gradeKey = 'EXCELLENT'
     gradeLabel = 'ดีเยี่ยม'
     gradeColor = 'emerald'
-  } else if (roundedPct >= 80) {
+  } else if (averageScore >= 2.0) {
     gradeKey = 'GOOD'
-    gradeLabel = 'ดี'
-    gradeColor = 'green'
-  } else if (roundedPct >= 70) {
-    gradeKey = 'FAIR'
-    gradeLabel = 'พอใช้ ควรปรับปรุงบางรายการ'
+    gradeLabel = 'ปานกลาง'
     gradeColor = 'amber'
-  } else if (roundedPct >= 60) {
-    gradeKey = 'IMPROVEMENT'
-    gradeLabel = 'ต้องปรับปรุง'
-    gradeColor = 'orange'
+  } else {
+    gradeKey = 'URGENT_ACTION'
+    gradeLabel = 'ต้องปรับปรุงเร่งด่วน'
+    gradeColor = 'red'
   }
 
   return {
@@ -82,6 +80,7 @@ export function calculateEvaluation(
     totalScoreObtained,
     totalMaxScore,
     percentage: roundedPct,
+    averageScore,
     gradeKey,
     gradeLabel,
     gradeColor,

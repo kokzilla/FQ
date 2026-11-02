@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
     roundId,
     buildingId,
     buildingName,
+    staffId,
     responsibleStaffText,
     assessorId,
     assessorName,
@@ -35,6 +36,7 @@ export default defineEventHandler(async (event) => {
     roundId: roundId || 'round-2570',
     buildingId: buildingId || 'b-custom',
     buildingName,
+    staffId: staffId || null,
     responsibleStaffText: responsibleStaffText || 'ไม่ระบุ',
     assessorId: assessorId || 'user-1',
     assessorName: assessorName || 'ผู้ตรวจประเมิน',
@@ -64,6 +66,7 @@ export default defineEventHandler(async (event) => {
       const saved = await prisma.assessment.create({
         data: {
           buildingId: assessmentData.buildingId,
+          staffId: assessmentData.staffId,
           assessorId: assessmentData.assessorId,
           responsibleStaffText: assessmentData.responsibleStaffText,
           totalScoreObtained: assessmentData.totalScoreObtained,
@@ -86,6 +89,7 @@ export default defineEventHandler(async (event) => {
           }
         }
       })
+      inMemoryAssessments.unshift(assessmentData)
       return { ok: true, data: saved }
     } catch (err: any) {}
   }
