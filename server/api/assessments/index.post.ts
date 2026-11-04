@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { isDbReady } from '../../utils/dbState'
+import { getColorCriteriaSettings } from '../../utils/settings'
 import { calculateEvaluation } from '~/shared/types/evaluation'
 
 // In-memory store for fallback if Postgres is not connected
@@ -16,20 +17,23 @@ export default defineEventHandler(async (event) => {
     responsibleStaffText,
     assessorId,
     assessorName,
+    assessedAt,
     scores,
     strengthsSummary,
     urgentProblems,
     correctivePlan,
     targetDeadline,
     signatureImage
-  } = body
+  } = body || {}
 
   if (!buildingName || !scores) {
     throw createError({ statusCode: 400, message: 'ข้อมูลแบบประเมินไม่ครบถ้วน' })
   }
 
-  // 1. คำนวณคะแนนตามเกณฑ์แบบสอบถาม
-  const evalResult = calculateEvaluation(scores)
+  // 1. คำนวณคะแนนตามเกณฑ์แบบสอบถามและเกณฑ์สีปัจจุบัน
+  const colorCriteria = await getColorCriteriaSettings()
+  const evalResult = calculateEvaluation(scores, colorCriteria.building)
+  const effectiveAssessedAt = assessedAt ? new Date(assessedAt).toISOString() : new Date().toISOString()
 
   const assessmentData = {
     id: `eval-${Date.now()}`,
@@ -40,7 +44,7 @@ export default defineEventHandler(async (event) => {
     responsibleStaffText: responsibleStaffText || 'ไม่ระบุ',
     assessorId: assessorId || 'user-1',
     assessorName: assessorName || 'ผู้ตรวจประเมิน',
-    assessedAt: new Date().toISOString(),
+    assessedAt: effectiveAssessedAt,
     totalScoreObtained: evalResult.totalScoreObtained,
     totalMaxScore: evalResult.totalMaxScore,
     percentage: evalResult.percentage,

@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 
 const props = defineProps<{
   modelValue?: string | null
@@ -39,6 +39,18 @@ const emit = defineEmits<{
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let ctx: CanvasRenderingContext2D | null = null
 let isDrawing = false
+
+function restoreSignatureFromValue(dataUrl?: string | null) {
+  const canvas = canvasRef.value
+  if (!canvas || !ctx || !dataUrl) return
+  const rect = canvas.getBoundingClientRect()
+  const img = new Image()
+  img.onload = () => {
+    ctx?.clearRect(0, 0, rect.width, rect.height)
+    ctx?.drawImage(img, 0, 0, rect.width, rect.height)
+  }
+  img.src = dataUrl
+}
 
 onMounted(() => {
   const canvas = canvasRef.value
@@ -56,6 +68,18 @@ onMounted(() => {
     ctx.lineJoin = 'round'
     ctx.strokeStyle = '#0f172a'
     ctx.lineWidth = 2.5
+  }
+
+  if (props.modelValue) {
+    restoreSignatureFromValue(props.modelValue)
+  }
+})
+
+watch(() => props.modelValue, (newVal) => {
+  if (!isDrawing && newVal) {
+    restoreSignatureFromValue(newVal)
+  } else if (!newVal && canvasRef.value && ctx) {
+    ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height)
   }
 })
 

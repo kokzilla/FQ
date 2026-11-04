@@ -1,5 +1,6 @@
 import { defineEventHandler } from 'h3'
 import { prisma } from '../../utils/prisma'
+import { isDbReady } from '../../utils/dbState'
 
 export const evaluationRounds = [
   {
@@ -24,18 +25,24 @@ export const evaluationRounds = [
   }
 ]
 
-export default defineEventHandler(async () => {
-  try {
-    const list = await prisma.evaluationRound.findMany({
-      orderBy: { year: 'desc' }
-    })
-    if (list.length > 0) {
-      return { ok: true, data: list }
-    }
-  } catch (err) {}
+export async function getAllEvaluationRounds() {
+  if (await isDbReady()) {
+    try {
+      const list = await prisma.evaluationRound.findMany({
+        orderBy: { year: 'desc' }
+      })
+      if (list.length > 0) {
+        return list
+      }
+    } catch (err) {}
+  }
+  return [...evaluationRounds].sort((a, b) => (a.year < b.year ? 1 : -1))
+}
 
+export default defineEventHandler(async () => {
+  const data = await getAllEvaluationRounds()
   return {
     ok: true,
-    data: evaluationRounds.sort((a, b) => (a.year < b.year ? 1 : -1))
+    data
   }
 })

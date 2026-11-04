@@ -1,13 +1,13 @@
 import { defineEventHandler, getQuery } from 'h3'
 import { inMemoryAssessments } from '../assessments/index.post'
-import { evaluationRounds } from '../rounds/index.get'
+import { getAllEvaluationRounds } from '../rounds/index.get'
+import { getDynamicQuestionsAndCategories } from '../questions/index.get'
 import { prisma } from '../../utils/prisma'
 import { isDbReady } from '../../utils/dbState'
-import { EVALUATION_CATEGORIES, EVALUATION_QUESTIONS } from '../../../shared/constants/questions'
 import { getColorCriteriaSettings, evaluateColorGrade } from '../../utils/settings'
 
 // Seed realistic individual multi-committee mock assessments across rounds if empty
-function ensureMockAssessments() {
+export function ensureMockAssessments() {
   if (inMemoryAssessments.length === 0) {
     // อาคาร 15 รอบ 2570 - ผู้ปฏิบัติงานคนที่ 1: นางสมศรี ใจสะอาด (กรรมการ 2 คน)
     inMemoryAssessments.push({
@@ -268,8 +268,13 @@ export default defineEventHandler(async (event) => {
     } catch (e) {}
   }
 
-  // ดึงการตั้งค่าเกณฑ์สีล่าสุด
-  const colorCriteria = await getColorCriteriaSettings()
+  // ดึงการตั้งค่าเกณฑ์สี รอบการประเมิน และรายการข้อคำถามล่าสุด
+  const [colorCriteria, availableRounds, { categories: activeCategories, questions: activeQuestions }] = await Promise.all([
+    getColorCriteriaSettings(),
+    getAllEvaluationRounds(),
+    getDynamicQuestionsAndCategories()
+  ])
+  const allQuestionIds = activeQuestions.map((q: any) => q.id)
 
   // กรองเฉพาะการประเมินในรอบที่เลือก
   const currentAssessments = allAssessments.filter(a => (a.roundId || 'round-2570') === roundId)
@@ -308,14 +313,14 @@ export default defineEventHandler(async (event) => {
     let evaluatedQuestionsCount = 0
     const itemAverages: Record<number, number> = {}
 
-    for (let qId = 1; qId <= 35; qId++) {
+    for (const qId of allQuestionIds) {
       let qScoresTotal = 0
       let qVotersCount = 0
 
       for (const ev of b.evaluations) {
         const item = ev.scores?.[qId]
         if (item && !item.isNA && item.score !== null && item.score !== undefined) {
-          qScoresTotal += item.score
+          qScoresTotal += Number(item.score)
           qVotersCount++
         }
       }
@@ -398,14 +403,14 @@ export default defineEventHandler(async (event) => {
     let evaluatedQuestionsCount = 0
     const itemAverages: Record<number, number> = {}
 
-    for (let qId = 1; qId <= 35; qId++) {
+    for (const qId of allQuestionIds) {
       let qScoresTotal = 0
       let qVotersCount = 0
 
       for (const ev of s.evaluations) {
         const item = ev.scores?.[qId]
         if (item && !item.isNA && item.score !== null && item.score !== undefined) {
-          qScoresTotal += item.score
+          qScoresTotal += Number(item.score)
           qVotersCount++
         }
       }
@@ -459,7 +464,11 @@ export default defineEventHandler(async (event) => {
   }).sort((a, b) => b.score - a.score)
 
   // 3. การเปรียบเทียบแนวโน้มข้ามรอบประเมิน (Cross-Round Trend Comparison)
-  const previousRoundId = 'round-2568'
+  const currentRoundIdx = availableRounds.findIndex((r: any) => r.id === roundId)
+  const previousRoundObj = currentRoundIdx >= 0 && currentRoundIdx + 1 < availableRounds.length
+    ? availableRounds[currentRoundIdx + 1]
+    : availableRounds.find((r: any) => r.id !== roundId)
+  const previousRoundId = previousRoundObj?.id || 'round-2568'
   const previousAssessments = allAssessments.filter(a => a.roundId === previousRoundId)
 
   const trendComparison = buildingAverages.map(curr => {
@@ -490,9 +499,9 @@ export default defineEventHandler(async (event) => {
   })
 
   // 4. วิเคราะห์จุดบกพร่องและความเสี่ยงเร่งด่วนตามหมวด (Category Defect Hotspots)
-  const categoryStats = EVALUATION_CATEGORIES.map(cat => {
-    const catQuestions = EVALUATION_QUESTIONS.filter(q => q.categoryId === cat.id)
-    const qIds = catQuestions.map(q => q.id)
+  const categoryStats = activeCategories.map((cat: any) => {
+    const catQuestions = activeQuestions.filter((q: any) => q.categoryId === cat.id)
+    const qIds = catQuestions.map((q: any) => q.id)
 
     let totalScore = 0
     let count = 0
@@ -521,12 +530,13 @@ export default defineEventHandler(async (event) => {
       defectCount,
       isRiskHotspot: categoryPct < 75 || defectCount > 2
     }
-  }).sort((a, b) => a.percentage - b.percentage)
+  }).sort((a: any, b: any) => a.percentage - b.percentage)
 
   return {
     ok: true,
     currentRoundId: roundId,
-    availableRounds: evaluationRounds,
+    previousRoundId,
+    availableRounds,
     colorCriteria,
     buildingAverages,
     staffAverages,

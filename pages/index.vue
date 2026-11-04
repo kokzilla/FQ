@@ -43,25 +43,25 @@
           </p>
         </div>
 
-        <!-- Grid 3: ระดับสีเขียว (>= 4.0) -->
+        <!-- Grid 3: ระดับสีเขียว -->
         <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-          <span class="text-xs text-emerald-600 font-medium">ระดับสีเขียว (≥ 4.0)</span>
+          <span class="text-xs text-emerald-600 font-medium">ระดับสีเขียว (≥ {{ colorCriteria.building.greenMin }})</span>
           <p class="text-2xl font-bold text-emerald-600 mt-1">
             {{ greenBuildingCount }} <span class="text-xs font-normal text-slate-400">อาคาร</span>
           </p>
         </div>
 
-        <!-- Grid 4: ระดับสีเหลือง (2.0 - 3.9) แทรกระหว่างเขียวกับแดง -->
+        <!-- Grid 4: ระดับสีเหลือง แทรกระหว่างเขียวกับแดง -->
         <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-          <span class="text-xs text-amber-500 font-medium">ระดับสีเหลือง (2.0 - 3.9)</span>
+          <span class="text-xs text-amber-500 font-medium">ระดับสีเหลือง ({{ colorCriteria.building.yellowMin }} - &lt; {{ colorCriteria.building.greenMin }})</span>
           <p class="text-2xl font-bold text-amber-500 mt-1">
             {{ yellowBuildingCount }} <span class="text-xs font-normal text-slate-400">อาคาร</span>
           </p>
         </div>
 
-        <!-- Grid 5: ระดับสีแดง (< 2.0) -->
+        <!-- Grid 5: ระดับสีแดง -->
         <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm col-span-2 sm:col-span-1">
-          <span class="text-xs text-rose-500 font-medium">ระดับสีแดง (&lt; 2.0)</span>
+          <span class="text-xs text-rose-500 font-medium">ระดับสีแดง (&lt; {{ colorCriteria.building.yellowMin }})</span>
           <p class="text-2xl font-bold text-rose-600 mt-1">
             {{ redBuildingCount }} <span class="text-xs font-normal text-slate-400">อาคาร</span>
           </p>
@@ -213,22 +213,52 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 
 const assessments = ref<any[]>([])
 const rounds = ref<any[]>([])
 const buildings = ref<any[]>([])
+const summaryBuildingAverages = ref<any[]>([])
+const summaryStaffAverages = ref<any[]>([])
+const colorCriteria = reactive({
+  building: {
+    greenMin: 4.0,
+    yellowMin: 2.0,
+    greenLabel: 'ดีเยี่ยม / ผ่านเกณฑ์มาตรฐาน',
+    yellowLabel: 'ปานกลาง / เฝ้าระวัง',
+    redLabel: 'ต้องปรับปรุงเร่งด่วน'
+  },
+  staff: {
+    greenMin: 4.0,
+    yellowMin: 2.0,
+    greenLabel: 'ดีเยี่ยม / ผลงานดีเด่น',
+    yellowLabel: 'ปานกลาง / พอใช้',
+    redLabel: 'ต้องปรับปรุงเร่งด่วน'
+  }
+})
 
 onMounted(async () => {
   try {
-    const [aRes, rRes, bRes]: any = await Promise.all([
+    const [aRes, rRes, bRes, cRes]: any = await Promise.all([
       $fetch('/api/assessments'),
       $fetch('/api/rounds'),
-      $fetch('/api/buildings')
+      $fetch('/api/buildings'),
+      $fetch('/api/settings/color-criteria')
     ])
     if (aRes?.data) assessments.value = aRes.data
     if (rRes?.data) rounds.value = rRes.data
     if (bRes?.data) buildings.value = bRes.data
+    if (cRes?.data) {
+      if (cRes.data.building) Object.assign(colorCriteria.building, cRes.data.building)
+      if (cRes.data.staff) Object.assign(colorCriteria.staff, cRes.data.staff)
+    }
+
+    const activeRoundId = (rounds.value.find((r: any) => r.status === 'OPEN') || rounds.value[0])?.id || 'round-2570'
+    const sRes: any = await $fetch(`/api/reports/summary?roundId=${activeRoundId}`)
+    if (sRes?.ok) {
+      summaryBuildingAverages.value = sRes.buildingAverages || []
+      summaryStaffAverages.value = sRes.staffAverages || []
+    }
   } catch (err) {
     console.error('Failed to load dashboard data', err)
   }
@@ -255,6 +285,10 @@ function getItemScore(item: any): string {
 }
 
 const averageScore = computed(() => {
+  if (buildingAverageList.value.length > 0) {
+    const total = buildingAverageList.value.reduce((acc, b) => acc + b.avgScore, 0)
+    return (total / buildingAverageList.value.length).toFixed(2)
+  }
   if (latestRoundAssessments.value.length === 0) return '0.00'
   const total = latestRoundAssessments.value.reduce((acc, curr) => {
     const s = curr.totalMaxScore > 0 ? (curr.totalScoreObtained / curr.totalMaxScore) * 5 : ((Number(curr.percentage) || 0) / 20)
@@ -284,7 +318,7 @@ const buildingScoresMap = computed(() => {
 })
 
 const evaluatedBuildingsCount = computed(() => {
-  return Object.keys(buildingScoresMap.value).length
+  return buildingAverageList.value.length
 })
 
 const totalBuildingsCount = computed(() => {
@@ -292,6 +326,15 @@ const totalBuildingsCount = computed(() => {
 })
 
 const buildingAverageList = computed(() => {
+  if (summaryBuildingAverages.value.length > 0) {
+    return summaryBuildingAverages.value.map(b => ({
+      buildingId: b.buildingId,
+      buildingName: b.buildingName,
+      avgScore: Number(b.score),
+      scoreStr: b.scoreFormatted || Number(b.score).toFixed(2),
+      pctStr: Number(b.percentage).toFixed(1)
+    }))
+  }
   return Object.values(buildingScoresMap.value).map(b => {
     const avg = b.scores.length > 0 ? b.scores.reduce((sum, s) => sum + s, 0) / b.scores.length : 0
     return {
@@ -304,15 +347,15 @@ const buildingAverageList = computed(() => {
 })
 
 const greenBuildingCount = computed(() => {
-  return buildingAverageList.value.filter(b => b.avgScore >= 4.0).length
+  return buildingAverageList.value.filter(b => b.avgScore >= colorCriteria.building.greenMin).length
 })
 
 const yellowBuildingCount = computed(() => {
-  return buildingAverageList.value.filter(b => b.avgScore >= 2.0 && b.avgScore < 4.0).length
+  return buildingAverageList.value.filter(b => b.avgScore >= colorCriteria.building.yellowMin && b.avgScore < colorCriteria.building.greenMin).length
 })
 
 const redBuildingCount = computed(() => {
-  return buildingAverageList.value.filter(b => b.avgScore < 2.0).length
+  return buildingAverageList.value.filter(b => b.avgScore < colorCriteria.building.yellowMin).length
 })
 
 // 1. Top 3 Buildings Leaderboard
@@ -345,6 +388,15 @@ const topThreeBuildings = computed(() => {
 
 // 2. Top 3 Personnel Leaderboard
 const staffPerformanceList = computed(() => {
+  if (summaryStaffAverages.value.length > 0) {
+    return summaryStaffAverages.value.map(s => ({
+      buildingName: s.buildingName,
+      staffName: s.staffName,
+      avgScore: Number(s.score),
+      scoreStr: s.scoreFormatted || Number(s.score).toFixed(2),
+      pctStr: Number(s.percentage).toFixed(1)
+    }))
+  }
   const map: Record<string, { buildingName: string; staffName: string; scores: number[] }> = {}
   for (const a of latestRoundAssessments.value) {
     const sName = (a.responsibleStaffText || '').trim() || 'ไม่ระบุ'
@@ -435,16 +487,16 @@ function formatAssessorShort(name: string) {
 
 function getItemGradeLabel(scoreStr: string) {
   const s = Number(scoreStr)
-  if (s >= 4.0) return 'ผ่านเกณฑ์ดีเยี่ยม'
-  if (s >= 2.0) return 'ปานกลาง / เฝ้าระวัง'
-  return 'ต้องปรับปรุงเร่งด่วน'
+  if (s >= colorCriteria.building.greenMin) return colorCriteria.building.greenLabel || 'ผ่านเกณฑ์ดีเยี่ยม'
+  if (s >= colorCriteria.building.yellowMin) return colorCriteria.building.yellowLabel || 'ปานกลาง / เฝ้าระวัง'
+  return colorCriteria.building.redLabel || 'ต้องปรับปรุงเร่งด่วน'
 }
 
 function getGradeClass(scoreStrOrGrade: string) {
   const s = Number(scoreStrOrGrade)
   if (!isNaN(s)) {
-    if (s >= 4.0) return 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-    if (s >= 2.0) return 'bg-amber-50 text-amber-800 border border-amber-200'
+    if (s >= colorCriteria.building.greenMin) return 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+    if (s >= colorCriteria.building.yellowMin) return 'bg-amber-50 text-amber-800 border border-amber-200'
     return 'bg-rose-50 text-rose-800 border border-rose-200'
   }
   if (scoreStrOrGrade === 'EXCELLENT' || scoreStrOrGrade === 'ดีเยี่ยม') return 'bg-emerald-50 text-emerald-800 border border-emerald-200'

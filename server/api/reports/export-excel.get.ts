@@ -1,6 +1,8 @@
 import { defineEventHandler, getQuery, setResponseHeaders } from 'h3'
 import { createRequire } from 'node:module'
 import { inMemoryAssessments } from '../assessments/index.post'
+import { ensureMockAssessments } from './summary.get'
+import { getDynamicQuestionsAndCategories } from '../questions/index.get'
 import { prisma } from '../../utils/prisma'
 import { isDbReady } from '../../utils/dbState'
 import { getColorCriteriaSettings } from '../../utils/settings'
@@ -9,9 +11,13 @@ const require = createRequire(import.meta.url)
 const XLSX = require('xlsx')
 
 export default defineEventHandler(async (event) => {
+  ensureMockAssessments()
+
   const query = getQuery(event)
   const roundId = (query.roundId as string) || 'round-2570'
   const exportType = (query.type as string) || 'building' // 'building' | 'staff'
+  const { questions: activeQuestions } = await getDynamicQuestionsAndCategories()
+  const allQuestionIds = activeQuestions.map((q: any) => q.id)
 
   // ดึงข้อมูลการประเมินทั้งหมด
   let allAssessments = [...inMemoryAssessments]
@@ -93,14 +99,14 @@ export default defineEventHandler(async (event) => {
       let totalScoreSum = 0
       let evaluatedQuestionsCount = 0
 
-      for (let qId = 1; qId <= 35; qId++) {
+      for (const qId of allQuestionIds) {
         let qScoresTotal = 0
         let qVotersCount = 0
 
         for (const ev of s.evaluations) {
           const item = ev.scores?.[qId]
           if (item && !item.isNA && item.score !== null && item.score !== undefined) {
-            qScoresTotal += item.score
+            qScoresTotal += Number(item.score)
             qVotersCount++
           }
         }
@@ -193,14 +199,14 @@ export default defineEventHandler(async (event) => {
       let totalScoreSum = 0
       let evaluatedQuestionsCount = 0
 
-      for (let qId = 1; qId <= 35; qId++) {
+      for (const qId of allQuestionIds) {
         let qScoresTotal = 0
         let qVotersCount = 0
 
         for (const ev of b.evaluations) {
           const item = ev.scores?.[qId]
           if (item && !item.isNA && item.score !== null && item.score !== undefined) {
-            qScoresTotal += item.score
+            qScoresTotal += Number(item.score)
             qVotersCount++
           }
         }

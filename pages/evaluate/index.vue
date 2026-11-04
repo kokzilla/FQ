@@ -344,6 +344,15 @@ const isCustomStaff = ref(false)
 const selectedRoundId = ref('round-2570')
 const availableRounds = ref<any[]>([])
 const buildings = ref<any[]>([])
+const dynamicCategories = ref<any[]>([...EVALUATION_CATEGORIES])
+const dynamicQuestions = ref<any[]>([...EVALUATION_QUESTIONS])
+const colorCriteria = reactive({
+  greenMin: 4.0,
+  yellowMin: 2.0,
+  greenLabel: 'ดีเยี่ยม',
+  yellowLabel: 'ปานกลาง',
+  redLabel: 'ต้องปรับปรุงเร่งด่วน'
+})
 const userSession = useCookie<any>('bru_user_session')
 
 // Form State
@@ -361,8 +370,8 @@ const form = reactive({
   scores: {} as Record<number, { score: number | null; isNA: boolean; defectNote?: string; photoUrl?: string }>
 })
 
-// Initialize 35 questions
-for (const q of EVALUATION_QUESTIONS) {
+// Initialize questions
+for (const q of dynamicQuestions.value) {
   form.scores[q.id] = { score: null, isNA: false, defectNote: '', photoUrl: '' }
 }
 
@@ -378,19 +387,22 @@ const tabOptions = computed(() => [
 ])
 
 const currentCategoryName = computed(() => {
-  return EVALUATION_CATEGORIES.find(c => c.id === activeTab.value)?.name || ''
+  return dynamicCategories.value.find(c => c.id === activeTab.value)?.name || ''
 })
 
 const currentQuestions = computed(() => {
-  return EVALUATION_QUESTIONS.filter(q => q.categoryId === activeTab.value)
+  return dynamicQuestions.value.filter(q => q.categoryId === activeTab.value)
 })
 
 const evaluationResult = computed(() => {
-  return calculateEvaluation(form.scores)
+  return calculateEvaluation(form.scores, {
+    totalItems: dynamicQuestions.value.length,
+    ...colorCriteria
+  })
 })
 
 function getCategoryAnsweredCount(catId: number) {
-  const catQuestions = EVALUATION_QUESTIONS.filter(q => q.categoryId === catId)
+  const catQuestions = dynamicQuestions.value.filter(q => q.categoryId === catId)
   const answered = catQuestions.filter(q => {
     const s = form.scores[q.id]
     return s && (s.isNA || (s.score !== null && s.score !== undefined))
@@ -502,10 +514,13 @@ function resetForm() {
 }
 
 onMounted(async () => {
+  loadDraft()
   try {
-    const [bRes, rRes]: any = await Promise.all([
+    const [bRes, rRes, qRes, cRes]: any = await Promise.all([
       $fetch('/api/buildings'),
-      $fetch('/api/rounds')
+      $fetch('/api/rounds'),
+      $fetch('/api/questions'),
+      $fetch('/api/settings/color-criteria')
     ])
     if (bRes?.data) buildings.value = bRes.data
     if (rRes?.data) {
@@ -513,13 +528,38 @@ onMounted(async () => {
       const openRound = rRes.data.find((r: any) => r.status === 'OPEN')
       if (openRound) selectedRoundId.value = openRound.id
     }
+    if (qRes?.ok) {
+      if (qRes.categories?.length) dynamicCategories.value = qRes.categories
+      if (qRes.questions?.length) {
+        dynamicQuestions.value = qRes.questions
+        const validIds = new Set(qRes.questions.map((q: any) => q.id))
+        for (const q of qRes.questions) {
+          if (!form.scores[q.id]) {
+            form.scores[q.id] = { score: null, isNA: false, defectNote: '', photoUrl: '' }
+          }
+        }
+        for (const k of Object.keys(form.scores)) {
+          if (!validIds.has(Number(k))) {
+            delete form.scores[Number(k)]
+          }
+        }
+      }
+    }
+    if (cRes?.data?.building) {
+      Object.assign(colorCriteria, cRes.data.building)
+    }
   } catch (err) {
     console.error('Error fetching data', err)
   }
-  loadDraft()
 })
 
 async function submitAssessment() {
+  const currentRound = availableRounds.value.find((r: any) => r.id === selectedRoundId.value)
+  if (currentRound && currentRound.status === 'CLOSED') {
+    showToast('รอบการประเมินนี้ปิดรับการประเมินแล้ว กรุณาเลือกรอบที่เปิดอยู่', 'error')
+    return
+  }
+
   if (!form.buildingName) {
     activeTab.value = 1
     showToast('กรุณาเลือกอาคารที่ทำการตรวจก่อนส่งผล', 'error')
@@ -529,6 +569,24 @@ async function submitAssessment() {
     activeTab.value = 1
     showToast('กรุณาระบุหรือเลือกผู้ปฏิบัติงานรายบุคคลที่จะประเมิน', 'error')
     return
+  }
+
+  // ตรวจสอบการให้คะแนนครบทุกข้อ และตรวจสอบการระบุข้อบกพร่องเมื่อให้คะแนน <= 3
+  for (const q of dynamicQuestions.value) {
+    const item = form.scores[q.id]
+    const isAnswered = item && (item.isNA || (item.score !== null && item.score !== undefined))
+    if (!isAnswered) {
+      activeTab.value = q.categoryId
+      showToast(`กรุณาประเมินข้อที่ ${q.itemNumber} ในหมวดที่ ${q.categoryId} ให้ครบถ้วนก่อนส่งผล`, 'error')
+      return
+    }
+    if (!item.isNA && item.score !== null && item.score !== undefined && item.score <= 3) {
+      if (!item.defectNote || !item.defectNote.trim()) {
+        activeTab.value = q.categoryId
+        showToast(`ข้อที่ ${q.itemNumber} ได้คะแนน ${item.score} กรุณาระบุข้อบกพร่องที่พบ`, 'error')
+        return
+      }
+    }
   }
 
   isSubmitting.value = true
@@ -543,6 +601,7 @@ async function submitAssessment() {
         responsibleStaffText: form.responsibleStaffText.trim(),
         assessorId: userSession.value?.id || userSession.value?.userlogin || null,
         assessorName: form.assessorName,
+        assessedAt: form.assessmentDate,
         scores: form.scores,
         strengthsSummary: form.strengthsSummary,
         urgentProblems: form.urgentProblems,

@@ -33,8 +33,18 @@ export interface EvaluationResult {
   gradeColor: 'emerald' | 'green' | 'amber' | 'orange' | 'red'
 }
 
+export interface EvaluationOptions {
+  totalItems?: number
+  greenMin?: number
+  yellowMin?: number
+  greenLabel?: string
+  yellowLabel?: string
+  redLabel?: string
+}
+
 export function calculateEvaluation(
-  scores: Record<number, { score: number | null; isNA: boolean; defectNote?: string; photoUrl?: string }>
+  scores: Record<number, { score: number | null; isNA: boolean; defectNote?: string; photoUrl?: string }>,
+  options?: EvaluationOptions
 ): EvaluationResult {
   let totalScoreObtained = 0
   let evaluatedItems = 0
@@ -42,39 +52,45 @@ export function calculateEvaluation(
 
   for (const itemId in scores) {
     const item = scores[itemId]
+    if (!item) continue
     if (item.isNA) {
       naItems++
     } else if (item.score !== null && item.score !== undefined) {
-      totalScoreObtained += item.score
+      totalScoreObtained += Number(item.score)
       evaluatedItems++
     }
   }
 
+  const keysCount = Object.keys(scores || {}).length
+  const totalItems = options?.totalItems ?? (keysCount > 0 ? keysCount : 35)
   const totalMaxScore = evaluatedItems * 5
   const percentage = totalMaxScore > 0 ? (totalScoreObtained / totalMaxScore) * 100 : 0
   const roundedPct = Math.round(percentage * 100) / 100
   const averageScore = evaluatedItems > 0 ? Math.round((totalScoreObtained / evaluatedItems) * 100) / 100 : 0
 
+  const greenMin = options?.greenMin ?? 4.0
+  const yellowMin = options?.yellowMin ?? 2.0
+
   let gradeKey: EvaluationResult['gradeKey'] = 'URGENT_ACTION'
-  let gradeLabel = 'ต้องปรับปรุงเร่งด่วน'
+  let gradeLabel = options?.redLabel || 'ต้องปรับปรุงเร่งด่วน'
   let gradeColor: EvaluationResult['gradeColor'] = 'red'
 
-  if (averageScore >= 4.0) {
+  if (averageScore >= greenMin) {
     gradeKey = 'EXCELLENT'
-    gradeLabel = 'ดีเยี่ยม'
+    gradeLabel = options?.greenLabel || 'ดีเยี่ยม'
     gradeColor = 'emerald'
-  } else if (averageScore >= 2.0) {
+  } else if (averageScore >= yellowMin) {
     gradeKey = 'GOOD'
-    gradeLabel = 'ปานกลาง'
+    gradeLabel = options?.yellowLabel || 'ปานกลาง'
     gradeColor = 'amber'
   } else {
     gradeKey = 'URGENT_ACTION'
-    gradeLabel = 'ต้องปรับปรุงเร่งด่วน'
+    gradeLabel = options?.redLabel || 'ต้องปรับปรุงเร่งด่วน'
     gradeColor = 'red'
   }
 
   return {
-    totalItems: 35,
+    totalItems,
     evaluatedItems,
     naItems,
     totalScoreObtained,
