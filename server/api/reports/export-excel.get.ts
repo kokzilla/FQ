@@ -1,7 +1,6 @@
 import { defineEventHandler, getQuery, setResponseHeaders } from 'h3'
 import { createRequire } from 'node:module'
 import { inMemoryAssessments } from '../assessments/index.post'
-import { ensureMockAssessments } from './summary.get'
 import { getDynamicQuestionsAndCategories } from '../questions/index.get'
 import { prisma } from '../../utils/prisma'
 import { isDbReady } from '../../utils/dbState'
@@ -11,7 +10,6 @@ const require = createRequire(import.meta.url)
 const XLSX = require('xlsx')
 
 export default defineEventHandler(async (event) => {
-  ensureMockAssessments()
 
   const query = getQuery(event)
   const roundId = (query.roundId as string) || 'round-2570'
@@ -19,45 +17,45 @@ export default defineEventHandler(async (event) => {
   const { questions: activeQuestions } = await getDynamicQuestionsAndCategories()
   const allQuestionIds = activeQuestions.map((q: any) => q.id)
 
-  // ดึงข้อมูลการประเมินทั้งหมด
-  let allAssessments = [...inMemoryAssessments]
+  // ดึงข้อมูลการประเมินทั้งหมดจากฐานข้อมูล PostgreSQL
+  let allAssessments: any[] = []
   if (await isDbReady()) {
     try {
       const dbAssessments = await prisma.assessment.findMany({
         include: { building: true, assessor: true, scores: true },
         orderBy: { createdAt: 'desc' }
       })
-      for (const d of dbAssessments) {
-        if (!allAssessments.some(a => a.id === d.id)) {
-          const scoresMap: any = {}
-          for (const s of d.scores) {
-            scoresMap[s.questionItemId] = {
-              score: s.score,
-              isNA: s.isNA,
-              defectNote: s.defectNote
-            }
+      allAssessments = dbAssessments.map(d => {
+        const scoresMap: any = {}
+        for (const s of d.scores) {
+          scoresMap[s.questionItemId] = {
+            score: s.score,
+            isNA: s.isNA,
+            defectNote: s.defectNote
           }
-          allAssessments.unshift({
-            id: d.id,
-            roundId: d.roundId || 'round-2570',
-            buildingId: d.buildingId,
-            buildingName: d.building?.name || 'อาคาร',
-            staffId: (d as any).staffId || null,
-            responsibleStaffText: d.responsibleStaffText,
-            assessorId: d.assessorId,
-            assessorName: d.assessor?.fullName || 'ผู้ตรวจประเมิน',
-            assessedAt: d.assessedAt.toISOString(),
-            totalScoreObtained: d.totalScoreObtained,
-            totalMaxScore: d.totalMaxScore,
-            percentage: d.percentage,
-            grade: d.grade,
-            gradeLabel: d.grade,
-            urgentProblems: d.urgentProblems || '',
-            scores: scoresMap
-          })
         }
-      }
+        return {
+          id: d.id,
+          roundId: d.roundId || 'round-2570',
+          buildingId: d.buildingId,
+          buildingName: d.building?.name || 'อาคาร',
+          staffId: (d as any).staffId || null,
+          responsibleStaffText: d.responsibleStaffText,
+          assessorId: d.assessorId,
+          assessorName: d.assessor?.fullName || 'ผู้ตรวจประเมิน',
+          assessedAt: d.assessedAt.toISOString(),
+          totalScoreObtained: d.totalScoreObtained,
+          totalMaxScore: d.totalMaxScore,
+          percentage: d.percentage,
+          grade: d.grade,
+          gradeLabel: d.grade,
+          urgentProblems: d.urgentProblems || '',
+          scores: scoresMap
+        }
+      })
     } catch (e) {}
+  } else {
+    allAssessments = [...inMemoryAssessments]
   }
 
   const currentAssessments = allAssessments.filter(a => (a.roundId || 'round-2570') === roundId)

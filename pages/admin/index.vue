@@ -343,7 +343,7 @@
 
       <!-- TAB 3: Buildings & Staff Management (HYBRID SSO + OUTSOURCE) -->
       <section v-else-if="adminTab === 'buildings'" class="space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 class="text-sm font-semibold text-slate-800">รายชื่ออาคารและผู้รับผิดชอบ ({{ buildings.length }} แห่ง)</h3>
             <p class="text-xs text-slate-500">รองรับทั้งการดึงข้อมูลจาก BRU SSO, เลือกจากประวัติในระบบ และพิมพ์ชื่อแม่บ้าน Outsource เอง</p>
@@ -351,15 +351,57 @@
           <button
             type="button"
             @click="openAddBuildingModal"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+            class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center justify-center space-x-1.5 self-start sm:self-auto flex-shrink-0"
           >
-            + เพิ่มอาคารใหม่
+            <span>+</span>
+            <span>เพิ่มอาคารใหม่</span>
           </button>
         </div>
 
-        <div class="grid grid-cols-1 gap-3">
+        <!-- Search Bar for Buildings and Caretakers -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2.5">
+          <div class="relative">
+            <input
+              v-model="buildingSearchQuery"
+              type="text"
+              placeholder="ค้นหาตามชื่ออาคาร, รหัสอาคาร หรือผู้ดูแลอาคาร/แม่บ้าน..."
+              class="w-full text-xs sm:text-sm pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+            />
+            <span class="absolute left-3 top-3 text-slate-400 text-xs">🔍</span>
+            <button
+              v-if="buildingSearchQuery"
+              type="button"
+              @click="buildingSearchQuery = ''"
+              class="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 text-xs w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+              title="ล้างคำค้นหา"
+            >
+              ✕
+            </button>
+          </div>
+
+          <!-- Result Count / Filter Indicator -->
+          <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+            <span>
+              พบอาคาร <strong>{{ filteredBuildings.length }}</strong> จากทั้งหมด <strong>{{ buildings.length }}</strong> แห่ง
+              <span v-if="buildingSearchQuery" class="text-indigo-600 font-medium ml-1">
+                (กรองตามคำค้นหา "{{ buildingSearchQuery }}")
+              </span>
+            </span>
+            <button
+              v-if="buildingSearchQuery"
+              type="button"
+              @click="buildingSearchQuery = ''"
+              class="text-indigo-600 hover:text-indigo-700 hover:underline font-medium cursor-pointer"
+            >
+              ✕ ล้างการค้นหา
+            </button>
+          </div>
+        </div>
+
+        <!-- Buildings List -->
+        <div v-if="filteredBuildings.length > 0" class="grid grid-cols-1 gap-3">
           <div
-            v-for="b in buildings"
+            v-for="b in filteredBuildings"
             :key="b.id"
             class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           >
@@ -405,6 +447,26 @@
                 ลบอาคาร
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else class="py-12 text-center bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
+          <div class="text-3xl">🔍</div>
+          <p class="text-sm font-semibold text-slate-700">
+            {{ buildingSearchQuery ? 'ไม่พบอาคารที่ตรงกับคำค้นหา' : 'ยังไม่มีข้อมูลอาคารในระบบ' }}
+          </p>
+          <p v-if="buildingSearchQuery" class="text-xs text-slate-400 max-w-sm mx-auto">
+            ไม่พบผลลัพธ์ที่ตรงกับ "{{ buildingSearchQuery }}" ลองค้นหาด้วยชื่ออาคาร, รหัสอาคาร หรือชื่อผู้รับผิดชอบ/แม่บ้านคำอื่น
+          </p>
+          <div v-if="buildingSearchQuery" class="pt-2">
+            <button
+              type="button"
+              @click="buildingSearchQuery = ''"
+              class="px-3.5 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-indigo-200"
+            >
+              ล้างคำค้นหา
+            </button>
           </div>
         </div>
       </section>
@@ -1863,6 +1925,30 @@ async function saveManualUser() {
 // 3. BUILDINGS & HYBRID STAFF MANAGEMENT
 // ==============================================
 const buildings = ref<any[]>([])
+const buildingSearchQuery = ref('')
+
+// Filtered buildings by building name, code, description, or caretaker/staff name
+const filteredBuildings = computed(() => {
+  const q = buildingSearchQuery.value.trim().toLowerCase()
+  if (!q) return buildings.value
+
+  return buildings.value.filter((b: any) => {
+    // 1. Check building name, code, description
+    const nameMatch = b.name && String(b.name).toLowerCase().includes(q)
+    const codeMatch = b.code && String(b.code).toLowerCase().includes(q)
+    const descMatch = b.description && String(b.description).toLowerCase().includes(q)
+    const responsibleStaffMatch = b.responsibleStaff && String(b.responsibleStaff).toLowerCase().includes(q)
+
+    // 2. Check caretakers / responsible staff
+    const staffMatch = Array.isArray(b.staffs) && b.staffs.some((s: any) => {
+      const sName = s.staffName || s.fullName || s.name || ''
+      const sLogin = s.userlogin || s.username || ''
+      return String(sName).toLowerCase().includes(q) || String(sLogin).toLowerCase().includes(q)
+    })
+
+    return nameMatch || codeMatch || descMatch || responsibleStaffMatch || staffMatch
+  })
+})
 const showAddBuildingModal = ref(false)
 const showEditBuildingModal = ref(false)
 const staffPool = ref<{ staffName: string; source: string }[]>([])

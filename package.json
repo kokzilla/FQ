@@ -11,7 +11,6 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:migrate-data": "tsx prisma/migrate-data.ts",
     "test": "tsx --test tests/system.test.ts"
   },
   "prisma": {

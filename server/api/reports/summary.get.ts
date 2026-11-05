@@ -6,225 +6,14 @@ import { prisma } from '../../utils/prisma'
 import { isDbReady } from '../../utils/dbState'
 import { getColorCriteriaSettings, evaluateColorGrade } from '../../utils/settings'
 
-// Seed realistic individual multi-committee mock assessments across rounds if empty
-export function ensureMockAssessments() {
-  if (inMemoryAssessments.length === 0) {
-    // อาคาร 15 รอบ 2570 - ผู้ปฏิบัติงานคนที่ 1: นางสมศรี ใจสะอาด (กรรมการ 2 คน)
-    inMemoryAssessments.push({
-      id: 'mock-1',
-      roundId: 'round-2570',
-      buildingId: 'b-15',
-      buildingName: 'อาคาร 15 (เฉลิมพระเกียรติ 50 พรรษา มหาวชิราลงกรณ)',
-      staffId: 's1',
-      responsibleStaffText: 'นางสมศรี ใจสะอาด',
-      assessorId: 'u2',
-      assessorName: 'ดร.สมชาย ใจมั่น (ประธานกรรมการ)',
-      assessedAt: '2026-10-15T09:30:00Z',
-      totalScoreObtained: 162,
-      totalMaxScore: 175,
-      percentage: 92.57,
-      grade: 'EXCELLENT',
-      gradeLabel: 'ดีเยี่ยม',
-      urgentProblems: '',
-      scores: generateScores(92)
-    })
-    inMemoryAssessments.push({
-      id: 'mock-2',
-      roundId: 'round-2570',
-      buildingId: 'b-15',
-      buildingName: 'อาคาร 15 (เฉลิมพระเกียรติ 50 พรรษา มหาวชิราลงกรณ)',
-      staffId: 's1',
-      responsibleStaffText: 'นางสมศรี ใจสะอาด',
-      assessorId: 'u3',
-      assessorName: 'ผศ.ณัฐพงษ์ สิทธิศักดิ์ (กรรมการ)',
-      assessedAt: '2026-10-15T10:15:00Z',
-      totalScoreObtained: 156,
-      totalMaxScore: 175,
-      percentage: 89.14,
-      grade: 'GOOD',
-      gradeLabel: 'ดี',
-      urgentProblems: 'ฝุ่นบริเวณหลังตู้ห้องประชุมชั้น 4',
-      scores: generateScores(89)
-    })
-
-    // อาคาร 15 รอบ 2570 - ผู้ปฏิบัติงานคนที่ 2: นางสมใจ รักษ์ดี (กรรมการ 1 คน)
-    inMemoryAssessments.push({
-      id: 'mock-2b',
-      roundId: 'round-2570',
-      buildingId: 'b-15',
-      buildingName: 'อาคาร 15 (เฉลิมพระเกียรติ 50 พรรษา มหาวชิราลงกรณ)',
-      staffId: 's2',
-      responsibleStaffText: 'นางสมใจ รักษ์ดี',
-      assessorId: 'u2',
-      assessorName: 'ดร.สมชาย ใจมั่น',
-      assessedAt: '2026-10-16T11:00:00Z',
-      totalScoreObtained: 165,
-      totalMaxScore: 175,
-      percentage: 94.28,
-      grade: 'EXCELLENT',
-      gradeLabel: 'ดีเยี่ยม',
-      urgentProblems: '',
-      scores: generateScores(94)
-    })
-
-    // อาคาร 18 (ARIT) รอบ 2570 - กรรมการ 2 คน
-    inMemoryAssessments.push({
-      id: 'mock-3',
-      roundId: 'round-2570',
-      buildingId: 'b-18',
-      buildingName: 'อาคาร 18 (สำนักวิทยบริการและเทคโนโลยีสารสนเทศ ARIT)',
-      staffId: 's3',
-      responsibleStaffText: 'นางปราณี ขยันยิ่ง',
-      assessorId: 'u2',
-      assessorName: 'ดร.สมชาย ใจมั่น',
-      assessedAt: '2026-10-18T13:45:00Z',
-      totalScoreObtained: 168,
-      totalMaxScore: 175,
-      percentage: 96.0,
-      grade: 'EXCELLENT',
-      gradeLabel: 'ดีเยี่ยม',
-      urgentProblems: '',
-      scores: generateScores(96)
-    })
-    inMemoryAssessments.push({
-      id: 'mock-4',
-      roundId: 'round-2570',
-      buildingId: 'b-18',
-      buildingName: 'อาคาร 18 (สำนักวิทยบริการและเทคโนโลยีสารสนเทศ ARIT)',
-      staffId: 's3',
-      responsibleStaffText: 'นางปราณี ขยันยิ่ง',
-      assessorId: 'u3',
-      assessorName: 'ผศ.ณัฐพงษ์ สิทธิศักดิ์',
-      assessedAt: '2026-10-18T14:30:00Z',
-      totalScoreObtained: 165,
-      totalMaxScore: 175,
-      percentage: 94.28,
-      grade: 'EXCELLENT',
-      gradeLabel: 'ดีเยี่ยม',
-      urgentProblems: '',
-      scores: generateScores(94)
-    })
-
-    // อาคาร 22 รอบ 2570 - คะแนนต้องปรับปรุง
-    inMemoryAssessments.push({
-      id: 'mock-5',
-      roundId: 'round-2570',
-      buildingId: 'b-22',
-      buildingName: 'อาคาร 22 (อาคารวิทยาศาสตร์และเทคโนโลยี)',
-      staffId: 's4',
-      responsibleStaffText: 'นางวันดี มีสุข',
-      assessorId: 'u2',
-      assessorName: 'ดร.สมชาย ใจมั่น',
-      assessedAt: '2026-10-20T11:00:00Z',
-      totalScoreObtained: 118,
-      totalMaxScore: 175,
-      percentage: 67.42,
-      grade: 'IMPROVEMENT',
-      gradeLabel: 'ต้องปรับปรุง',
-      urgentProblems: 'ถังขยะห้องน้ำล้นส่งกลิ่นรบกวน, พื้นห้องน้ำลื่นเสี่ยงอุบัติเหตุ',
-      scores: generateScores(67, true)
-    })
-
-    // อาคาร 24 รอบ 2570
-    inMemoryAssessments.push({
-      id: 'mock-6',
-      roundId: 'round-2570',
-      buildingId: 'b-24',
-      buildingName: 'อาคาร 24 (อาคารปฏิบัติการทางวิทยาศาสตร์และนวัตกรรม)',
-      staffId: 's5',
-      responsibleStaffText: 'นางสุภาพรรณ บัวแก้ว',
-      assessorId: 'u3',
-      assessorName: 'ผศ.ณัฐพงษ์ สิทธิศักดิ์',
-      assessedAt: '2026-10-21T09:30:00Z',
-      totalScoreObtained: 154,
-      totalMaxScore: 175,
-      percentage: 88.0,
-      grade: 'GOOD',
-      gradeLabel: 'ดี',
-      urgentProblems: '',
-      scores: generateScores(88)
-    })
-
-    // ข้อมูลย้อนหลังรอบปี 2568 (เพื่อใช้เปรียบเทียบ Cross-Round Trend)
-    inMemoryAssessments.push({
-      id: 'mock-prev-1',
-      roundId: 'round-2568',
-      buildingId: 'b-15',
-      buildingName: 'อาคาร 15 (เฉลิมพระเกียรติ 50 พรรษา มหาวชิราลงกรณ)',
-      staffId: 's1',
-      responsibleStaffText: 'นางสมศรี ใจสะอาด',
-      assessorId: 'u2',
-      assessorName: 'ดร.สมชาย ใจมั่น',
-      assessedAt: '2025-11-10T10:00:00Z',
-      totalScoreObtained: 150,
-      totalMaxScore: 175,
-      percentage: 85.71,
-      grade: 'GOOD',
-      gradeLabel: 'ดี',
-      scores: generateScores(85)
-    })
-    inMemoryAssessments.push({
-      id: 'mock-prev-2',
-      roundId: 'round-2568',
-      buildingId: 'b-18',
-      buildingName: 'อาคาร 18 (สำนักวิทยบริการและเทคโนโลยีสารสนเทศ ARIT)',
-      staffId: 's3',
-      responsibleStaffText: 'นางปราณี ขยันยิ่ง',
-      assessorId: 'u2',
-      assessorName: 'ดร.สมชาย ใจมั่น',
-      assessedAt: '2025-11-12T14:00:00Z',
-      totalScoreObtained: 161,
-      totalMaxScore: 175,
-      percentage: 92.0,
-      grade: 'EXCELLENT',
-      gradeLabel: 'ดีเยี่ยม',
-      scores: generateScores(92)
-    })
-    inMemoryAssessments.push({
-      id: 'mock-prev-3',
-      roundId: 'round-2568',
-      buildingId: 'b-22',
-      buildingName: 'อาคาร 22 (อาคารวิทยาศาสตร์และเทคโนโลยี)',
-      staffId: 's4',
-      responsibleStaffText: 'นางวันดี มีสุข',
-      assessorId: 'u2',
-      assessorName: 'ดร.สมชาย ใจมั่น',
-      assessedAt: '2025-11-15T11:00:00Z',
-      totalScoreObtained: 126,
-      totalMaxScore: 175,
-      percentage: 72.0,
-      grade: 'FAIR',
-      gradeLabel: 'พอใช้ ควรปรับปรุงบางรายการ',
-      scores: generateScores(72)
-    })
-  }
-}
-
-function generateScores(targetPct: number, hasUrgent: boolean = false) {
-  const scores: any = {}
-  for (let i = 1; i <= 35; i++) {
-    let s = 5
-    if (targetPct < 70) {
-      s = (i % 3 === 0) ? 2 : (i % 2 === 0 ? 3 : 4)
-    } else if (targetPct < 90) {
-      s = (i % 4 === 0) ? 4 : 5
-    }
-    if (hasUrgent && (i === 14 || i === 15 || i === 27)) {
-      s = 2
-    }
-    scores[i] = { score: s, isNA: false, defectNote: s <= 3 ? 'ต้องปรับปรุงความสะอาด' : '' }
-  }
-  return scores
-}
-
 export default defineEventHandler(async (event) => {
   ensureMockAssessments()
 
   const query = getQuery(event)
   const roundId = (query.roundId as string) || 'round-2570'
 
-  // รวม assessments จากฐานข้อมูลถ้ามี
-  let allAssessments = [...inMemoryAssessments]
+  // ดึงข้อมูลการประเมินจากฐานข้อมูล PostgreSQL
+  let allAssessments: any[] = []
   if (await isDbReady()) {
     try {
       const dbAssessments = await prisma.assessment.findMany({
@@ -232,40 +21,41 @@ export default defineEventHandler(async (event) => {
           building: true,
           assessor: true,
           scores: true
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      allAssessments = dbAssessments.map(d => {
+        const scoresMap: any = {}
+        for (const s of d.scores) {
+          scoresMap[s.questionItemId] = {
+            score: s.score,
+            isNA: s.isNA,
+            defectNote: s.defectNote,
+            photoUrl: s.photoUrl
+          }
+        }
+        return {
+          id: d.id,
+          roundId: d.roundId || 'round-2570',
+          buildingId: d.buildingId,
+          buildingName: d.building?.name || 'อาคาร',
+          staffId: (d as any).staffId || null,
+          responsibleStaffText: d.responsibleStaffText,
+          assessorId: d.assessorId,
+          assessorName: d.assessor?.fullName || 'ผู้ตรวจประเมิน',
+          assessedAt: d.assessedAt.toISOString(),
+          totalScoreObtained: d.totalScoreObtained,
+          totalMaxScore: d.totalMaxScore,
+          percentage: d.percentage,
+          grade: d.grade,
+          gradeLabel: d.grade,
+          urgentProblems: d.urgentProblems || '',
+          scores: scoresMap
         }
       })
-      for (const d of dbAssessments) {
-        if (!allAssessments.some(a => a.id === d.id)) {
-          const scoresMap: any = {}
-          for (const s of d.scores) {
-            scoresMap[s.questionItemId] = {
-              score: s.score,
-              isNA: s.isNA,
-              defectNote: s.defectNote,
-              photoUrl: s.photoUrl
-            }
-          }
-          allAssessments.unshift({
-            id: d.id,
-            roundId: d.roundId || 'round-2570',
-            buildingId: d.buildingId,
-            buildingName: d.building?.name || 'อาคาร',
-            staffId: (d as any).staffId || null,
-            responsibleStaffText: d.responsibleStaffText,
-            assessorId: d.assessorId,
-            assessorName: d.assessor?.fullName || 'ผู้ตรวจประเมิน',
-            assessedAt: d.assessedAt.toISOString(),
-            totalScoreObtained: d.totalScoreObtained,
-            totalMaxScore: d.totalMaxScore,
-            percentage: d.percentage,
-            grade: d.grade,
-            gradeLabel: d.grade,
-            urgentProblems: d.urgentProblems || '',
-            scores: scoresMap
-          })
-        }
-      }
     } catch (e) {}
+  } else {
+    allAssessments = [...inMemoryAssessments]
   }
 
   // ดึงการตั้งค่าเกณฑ์สี รอบการประเมิน และรายการข้อคำถามล่าสุด

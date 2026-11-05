@@ -65,47 +65,448 @@ const questions = [
 
 const sampleBuildings = [
   {
-    code: 'B15',
-    name: 'อาคาร 15 (เฉลิมพระเกียรติ 50 พรรษา มหาวชิราลงกรณ)',
-    floors: 9,
-    description: 'อาคารเรียนรวมและศูนย์ปฏิบัติการ 9 ชั้น',
-    staffs: ['นางสมศรี ใจสะอาด (ชั้น 1-4)', 'นางสมใจ รักษ์ดี (ชั้น 5-9)']
+    "code": "B01",
+    "name": "อาคาร 1",
+    "floors": 3,
+    "description": "สังกัด สถาบันวิจัยและพัฒนา",
+    "staffs": [
+      "นางประยงค์  นันกลาง"
+    ]
   },
   {
-    code: 'B18',
-    name: 'อาคาร 18 (สำนักวิทยบริการและเทคโนโลยีสารสนเทศ ARIT)',
-    floors: 5,
-    description: 'หอสมุดกลาง ศูนย์คอมพิวเตอร์และอินเทอร์เน็ต',
-    staffs: ['นางปราณี ขยันยิ่ง (หอสมุดและศูนย์คอมฯ)']
+    "code": "B02",
+    "name": "อาคาร 2",
+    "floors": 3,
+    "description": "สังกัด คณะวิทยาศาสตร์ (ห้องพยาบาล)",
+    "staffs": [
+      "นางสาวจันทร์จิรา  เชิดกลิ่น"
+    ]
   },
   {
-    code: 'B22',
-    name: 'อาคาร 22 (อาคารวิทยาศาสตร์และเทคโนโลยี)',
-    floors: 8,
-    description: 'คณะวิทยาศาสตร์และห้องปฏิบัติการเคมี/ฟิสิกส์',
-    staffs: ['นางวันดี มีสุข']
+    "code": "B05",
+    "name": "อาคาร 5",
+    "floors": 3,
+    "description": "สังกัด คณะวิทยาศาสตร์",
+    "staffs": [
+      "นางสาวปัทมา  ยอนรัมย์"
+    ]
   },
   {
-    code: 'B24',
-    name: 'อาคาร 24 (อาคารปฏิบัติการทางวิทยาศาสตร์และนวัตกรรม)',
-    floors: 7,
-    description: 'ศูนย์ความเป็นเลิศทางการวิจัยและนวัตกรรม',
-    staffs: ['นางสุภาพรรณ บัวแก้ว']
+    "code": "B06",
+    "name": "อาคาร 6",
+    "floors": 3,
+    "description": "สังกัด คณะมนุษยศาสตร์และสังคมศาสตร์",
+    "staffs": [
+      "นางสาวสุณี  เกริงรัมย์"
+    ]
   },
   {
-    code: 'B01',
-    name: 'อาคาร 1 (อาคารอำนวยการและสำนักงานอธิการบดี)',
-    floors: 3,
-    description: 'สำนักงานอธิการบดี กองกลาง และกองนโยบายและแผน',
-    staffs: ['นางอำไพ พรหมประเสริฐ']
+    "code": "B07",
+    "name": "อาคาร 7",
+    "floors": 3,
+    "description": "สังกัด คณะวิทยาศาสตร์",
+    "staffs": [
+      "นางสาวพิมพ์วลัญช์  เชียงพฤกษ์"
+    ]
+  },
+  {
+    "code": "B10",
+    "name": "อาคาร 10",
+    "floors": 3,
+    "description": "สังกัด คณะครุศาสตร์",
+    "staffs": [
+      "นางสาวตวงลักษณ์  นิลแก้ว"
+    ]
+  },
+  {
+    "code": "B12",
+    "name": "อาคาร 12 (ศูนย์วิทยาศาสตร์และวิทยาศาสตร์ประยุกต์)",
+    "floors": 4,
+    "description": "สังกัด คณะวิทยาศาสตร์",
+    "staffs": [
+      "นายพงศ์ศรัณย์  เติมเทียน",
+      "นางสาวมะปราง  เปาป่า"
+    ]
+  },
+  {
+    "code": "B13",
+    "name": "อาคาร 13 (คณะพยาบาลศาสตร์)",
+    "floors": 4,
+    "description": "สังกัด คณะพยาบาลศาสตร์",
+    "staffs": [
+      "นางสาวสุวรรณา  ทองสม"
+    ]
+  },
+  {
+    "code": "B14",
+    "name": "อาคาร 14",
+    "floors": 3,
+    "description": "สังกัด คณะครุศาสตร์ + คณะมนุษยศาสตร์ฯ (สาขาวิชานาฏศิลป์+ดนตรี)",
+    "staffs": [
+      "นางสาวมาลี  สิงห์คำ"
+    ]
+  },
+  {
+    "code": "B15",
+    "name": "อาคาร 15 (อาคารเฉลิมพระเกียรติ 50 พรรษามหาวชิราลงกรณ์)",
+    "floors": 9,
+    "description": "สังกัด สำนักงานอธิการบดี + บัณฑิตวิทยาลัย",
+    "staffs": [
+      "นางบุญมี  จันลา",
+      "นางสาวธัญรัศม์  เครืองรัมย์",
+      "นางสาวพชรภรณ์  ลีประโคน",
+      "นางรุจิกาญจน์  สิงห์คำ"
+    ]
+  },
+  {
+    "code": "B16",
+    "name": "อาคาร 16 (อาคารสิ่งทอ)",
+    "floors": 2,
+    "description": "สังกัด คณะวิทยาศาสตร์",
+    "staffs": [
+      "นางกชพร  ชุบรัมย์"
+    ]
+  },
+  {
+    "code": "B17",
+    "name": "อาคาร 17 (อาคารนวัตปัญญา)",
+    "floors": 4,
+    "description": "สังกัด สำนักวิทยบริการและเทคโนโลยีสารสนเทศ",
+    "staffs": [
+      "นางสาวกรวรรณ  จันทรภูมิ",
+      "นางณัฐชยา  ปรีชารัมย์"
+    ]
+  },
+  {
+    "code": "B18",
+    "name": "อาคาร 18 (อาคารเฉลิมพระเกียรติ 7 รอบ พระชนมพรรษา)",
+    "floors": 5,
+    "description": "สังกัด คณะเทคโนโลยีอุตสาหกรรม",
+    "staffs": [
+      "นางทองสุข  คิดการ",
+      "นางอินทิรา  พงษ์กระพัน"
+    ]
+  },
+  {
+    "code": "B19",
+    "name": "อาคาร 19 (อาคารสิริวิชญากร)",
+    "floors": 5,
+    "description": "สังกัด คณะครุศาสตร์",
+    "staffs": [
+      "นายวุฒิพงษ์  ชำนาญชัยศรี",
+      "นางสาวลลิตา  จะเชนรัมย์"
+    ]
+  },
+  {
+    "code": "B20",
+    "name": "อาคาร 20 (อาคารสิริวิทยเกษตร)",
+    "floors": 4,
+    "description": "สังกัด คณะเทคโนโลยีการเกษตร",
+    "staffs": [
+      "นางสาวนงพะงา  ปลั่งกลาง",
+      "นางสาวศิริขวัญ  อินัง"
+    ]
+  },
+  {
+    "code": "B21",
+    "name": "อาคาร 21",
+    "floors": 3,
+    "description": "สังกัด สำนักส่งเสริมวิชาการและงานทะเบียน",
+    "staffs": [
+      "นางสาวละเมียด  ปลื้มกมล"
+    ]
+  },
+  {
+    "code": "B22",
+    "name": "อาคาร 22 (อาคารวิทยาศาสตร์สุขภาพ)",
+    "floors": 8,
+    "description": "สังกัด คณะวิทยาศาสตร์",
+    "staffs": [
+      "นางสาวศุภิสรา  รอบแคว้น",
+      "นางสาวราตรี  คำบาง"
+    ]
+  },
+  {
+    "code": "B23",
+    "name": "อาคาร 23 (อาคารอเนกคุณาคาร 1 อาคารราชภัฏคอมเพลคซ์)",
+    "floors": 4,
+    "description": "สังกัด สำนักส่งเสริมวิชาการและงานทะเบียน + กองพัฒนานักศึกษา",
+    "staffs": [
+      "นางอำนวย  คงชู",
+      "นายสมชาย  สว่างพบ"
+    ]
+  },
+  {
+    "code": "B24",
+    "name": "อาคาร 24 (คณะวิทยาการจัดการ)",
+    "floors": 7,
+    "description": "สังกัด คณะวิทยาการจัดการ",
+    "staffs": [
+      "นางณิสาชล  คะรุรัมย์",
+      "นางวาสนา  กรีรัมย์"
+    ]
+  },
+  {
+    "code": "B25",
+    "name": "อาคาร 25 (คณะมนุษยศาสตร์และสังคมศาสตร์)",
+    "floors": 5,
+    "description": "สังกัด คณะมนุษยศาสตร์และสังคมศาสตร์",
+    "staffs": [
+      "นางพรรณี  สวายรัมย์",
+      "นางวันทนีย์  ประสูติธนกิตต์"
+    ]
+  },
+  {
+    "code": "B26",
+    "name": "อาคาร 26 (อาคารอเนกคุณาคาร 2)",
+    "floors": 4,
+    "description": "สังกัด คณะครุศาสตร์ + คณะมนุษยศาสตร์ฯ (สาขาวิชาศิลปะ)",
+    "staffs": [
+      "นางสาวละเมียด  ปลื้มกมล"
+    ]
+  },
+  {
+    "code": "B27",
+    "name": "อาคาร 27 (โรงเรียนสาธิต มหาวิทยาลัยราชภัฏบุรีรัมย์)",
+    "floors": 4,
+    "description": "สังกัด โรงเรียนสาธิต มหาวิทยาลัยราชภัฏบุรีรัมย์",
+    "staffs": [
+      "นางสาวสุภาภรณ์  ชะโลมรัมย์"
+    ]
+  },
+  {
+    "code": "B-LIB",
+    "name": "อาคารบรรณราชนครินทร์ (ห้องสมุด สำนักวิทยบริการฯ)",
+    "floors": 4,
+    "description": "สังกัด สำนักวิทยบริการและเทคโนโลยีสารสนเทศ",
+    "staffs": [
+      "นางสาวกันตินันท์  เอกา"
+    ]
+  },
+  {
+    "code": "B-STAD",
+    "name": "สนามกีฬากลาง",
+    "floors": 1,
+    "description": "สังกัด คณะครุศาสตร์",
+    "staffs": [
+      "นายวุฒิชัย  มะลิรัมย์"
+    ]
+  },
+  {
+    "code": "B-GYM",
+    "name": "โรงยิมส์",
+    "floors": 2,
+    "description": "สังกัด คณะครุศาสตร์",
+    "staffs": [
+      "นางสาวจุฑาทิพย์  อีนัง"
+    ]
+  },
+  {
+    "code": "B-AUD1",
+    "name": "หอประชุมวิชชาอัตศาสตร์",
+    "floors": 2,
+    "description": "ผอ.กองกลาง",
+    "staffs": [
+      "นายสุรชัย  ตามกลาง"
+    ]
+  },
+  {
+    "code": "B-AUD2",
+    "name": "หอประชุมมาลิณีจุโฑปะมา",
+    "floors": 2,
+    "description": "คณะกรรมการหอประชุมตามคำสั่งแต่งตั้งของมหาวิทยาลัย",
+    "staffs": [
+      "นายญาณวรุตม์  พันธุ์ขุนแก้ว",
+      "นางสาวบุญมี  ปัตแวว",
+      "นางพัชรา  พะสุรัมย์"
+    ]
+  },
+  {
+    "code": "B-CER",
+    "name": "อาคารเซรามิกส์",
+    "floors": 1,
+    "description": "สังกัด คณะเทคโนโลยีอุตสาหกรรม",
+    "staffs": [
+      "นายทองพูน  ธรรมสาลี"
+    ]
+  },
+  {
+    "code": "B-WOOD",
+    "name": "Shop งานไม้ (คณะเทคโนโลยีอุตสาหกรรมเก่า)",
+    "floors": 1,
+    "description": "สังกัด คณะเทคโนโลยีอุตสาหกรรม",
+    "staffs": [
+      "นายทองพูน  ธรรมสาลี"
+    ]
+  },
+  {
+    "code": "B-IT",
+    "name": "อาคาร IT (อาคารเทคโนโลยีสารสนเทศเก่า)",
+    "floors": 2,
+    "description": "สังกัด คณะวิทยาศาสตร์",
+    "staffs": [
+      "นางณิชาภา  นามวัน"
+    ]
+  },
+  {
+    "code": "B-CUL",
+    "name": "ศูนย์วัฒนธรรมอีสานใต้",
+    "floors": 2,
+    "description": "สังกัด สำนักศิลปะและวัฒนธรรม",
+    "staffs": [
+      "นางสาวเสาวลักษณ์  กอนรัมย์"
+    ]
+  },
+  {
+    "code": "DORM-RP01",
+    "name": "หอพักราชพฤกษ์ 1",
+    "floors": 4,
+    "description": "สังกัด กองพัฒนานักศึกษา (หอพักนักศึกษา)",
+    "staffs": [
+      "นางสาวนวน  ระตาภรณ์"
+    ]
+  },
+  {
+    "code": "DORM-RP02",
+    "name": "หอพักราชพฤกษ์ 2",
+    "floors": 4,
+    "description": "สังกัด กองพัฒนานักศึกษา (หอพักนักศึกษา)",
+    "staffs": [
+      "นางสาวศรสวรรค์  เดยังรัมย์"
+    ]
+  },
+  {
+    "code": "DORM-RP03",
+    "name": "หอพักราชพฤกษ์ 3",
+    "floors": 4,
+    "description": "สังกัด กองพัฒนานักศึกษา (หอพักนักศึกษา)",
+    "staffs": [
+      "นางสาวนวน  ระตาภรณ์"
+    ]
+  },
+  {
+    "code": "DORM-RP04",
+    "name": "หอพักราชพฤกษ์ 4",
+    "floors": 4,
+    "description": "สังกัด คณะพยาบาลศาสตร์ (หอพักนักศึกษาพยาบาล)",
+    "staffs": [
+      "นางสาวศรสวรรค์  เดยังรัมย์"
+    ]
+  },
+  {
+    "code": "DORM-RP06",
+    "name": "หอพักราชพฤกษ์ 6",
+    "floors": 4,
+    "description": "สังกัด กองพัฒนานักศึกษา (หอพักนักศึกษา)",
+    "staffs": [
+      "นางสาวนงนุช  หนาวบุรีรัมย์"
+    ]
+  },
+  {
+    "code": "DORM-RP07",
+    "name": "หอพักราชพฤกษ์ 7",
+    "floors": 4,
+    "description": "สังกัด กองพัฒนานักศึกษา (หอพักนักศึกษา)",
+    "staffs": [
+      "นางสาวนงนุช  หนาวบุรีรัมย์"
+    ]
+  },
+  {
+    "code": "DORM-RP08",
+    "name": "หอพักราชพฤกษ์ 8",
+    "floors": 4,
+    "description": "สังกัด กองพัฒนานักศึกษา (หอพักนักศึกษา)",
+    "staffs": [
+      "นางสาวจรรยา  เจียนรัมย์"
+    ]
+  },
+  {
+    "code": "DORM-RP09",
+    "name": "หอพักราชพฤกษ์ 9",
+    "floors": 4,
+    "description": "สังกัด กองพัฒนานักศึกษา (หอพักนักศึกษา)",
+    "staffs": [
+      "นางสาวจรรยา  เจียนรัมย์"
+    ]
+  },
+  {
+    "code": "DORM-KA",
+    "name": "หอพักเขาอังคาร",
+    "floors": 4,
+    "description": "สังกัด กองพัฒนานักศึกษา (หอพักนักศึกษา)",
+    "staffs": [
+      "นางพรพรรณ  คำใจ"
+    ]
+  },
+  {
+    "code": "DORM-KD",
+    "name": "หอพักเขากระโดง",
+    "floors": 4,
+    "description": "สังกัด ฝ่ายทรัพย์สินและสิทธิประโยชน์ (หอพักบุคลากร)",
+    "staffs": [
+      "นางพรพรรณ  คำใจ"
+    ]
+  },
+  {
+    "code": "CANTEEN-1",
+    "name": "ศูนย์อาหาร 1",
+    "floors": 2,
+    "description": "สังกัด ฝ่ายทรัพย์สินและสิทธิประโยชน์ (คณะกรรมการศูนย์อาหารตามคำสั่งแต่งตั้งของมหาวิทยาลัย)",
+    "staffs": [
+      "นายพรชัย  มาลัยทอง"
+    ]
+  },
+  {
+    "code": "CANTEEN-2",
+    "name": "ศูนย์อาหาร 2",
+    "floors": 2,
+    "description": "สังกัด ฝ่ายทรัพย์สินและสิทธิประโยชน์ (คณะกรรมการศูนย์อาหารตามคำสั่งแต่งตั้งของมหาวิทยาลัย)",
+    "staffs": [
+      "นายพรชัย  มาลัยทอง"
+    ]
+  },
+  {
+    "code": "POOL",
+    "name": "สระว่ายน้ำ (ราชภัฏชลาธาร)",
+    "floors": 1,
+    "description": "คณะกรรมการอาคารสถานกีฬาตามคำสั่งแต่งตั้งของมหาวิทยาลัย",
+    "staffs": [
+      "นายวรุฒิพงษ์  สิริวัฒนธีรกุล"
+    ]
   }
 ]
 
 const initialUsers = [
   { userlogin: 'admin', fullName: 'ผู้ดูแลระบบ อาคารสถานที่', role: 'ADMIN', positionName: 'ผู้ดูแลระบบอาคารสถานที่', email: 'admin@bru.ac.th' },
-  { userlogin: 'somchai', fullName: 'ดร.สมชาย ใจมั่น', role: 'AUDITOR', positionName: 'ประธานกรรมการตรวจประเมินอาคาร', email: 'somchai@bru.ac.th' },
-  { userlogin: 'nattapong', fullName: 'ผศ.ณัฐพงษ์ สิทธิศักดิ์', role: 'AUDITOR', positionName: 'กรรมการตรวจประเมิน', email: 'nattapong@bru.ac.th' },
-  { userlogin: 'pranee', fullName: 'นางปราณี ขยันยิ่ง', role: 'HOUSEKEEPER', positionName: 'พนักงานบริการประจำอาคาร (แม่บ้าน)', email: 'pranee@bru.ac.th' },
+  { userlogin: '100174', fullName: 'รองศาสตราจารย์ ดร. ศิราณี จุโฑปะมา', role: 'AUDITOR', positionName: 'ประธานกรรมการ', departmentId: '79', email: '100174@bru.ac.th' },
+  { userlogin: '900522', fullName: 'ผู้ช่วยศาสตราจารย์ ดร. พิทยา พันธะไชย', role: 'AUDITOR', positionName: 'รองประธานกรรมการ', departmentId: '79', email: '900522@bru.ac.th' },
+  { userlogin: '100196', fullName: 'รองศาสตราจารย์ ดร. สุพัตรา รักการศิลป์', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '0', email: '100196@bru.ac.th' },
+  { userlogin: '500118', fullName: 'อาจารย์ ดร. พนาสินธุ์ ศรีวิเศษ', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '79', email: '500118@bru.ac.th' },
+  { userlogin: '400051', fullName: 'อาจารย์ อัญญา มธุรเมธา', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '123', email: '400051@bru.ac.th' },
+  { userlogin: '100223', fullName: 'ผู้ช่วยศาสตราจารย์ ดร. นิจพร ณ พัทลุง', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '158', email: '100223@bru.ac.th' },
+  { userlogin: '100061', fullName: 'อาจารย์ วิชชา ภัทรนิธิคุณากร', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '118', email: '100061@bru.ac.th' },
+  { userlogin: '100232', fullName: 'อาจารย์ วิสาข์ แฝงเวียง', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '172', email: '100232@bru.ac.th' },
+  { userlogin: '100014', fullName: 'ผู้ช่วยศาสตราจารย์ วิไลวรรณ ศิริเมฆา', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '94', email: '100014@bru.ac.th' },
+  { userlogin: '440213', fullName: 'อาจารย์ ดร. ศรีเพ็ญ พลเดช', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '79', email: '440213@bru.ac.th' },
+  { userlogin: '57023', fullName: 'ผู้ช่วยศาสตราจารย์ ดร. เอกชัย ธีรภัคสิริ', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '79', email: '57023@bru.ac.th' },
+  { userlogin: '400015', fullName: 'ผู้ช่วยศาสตราจารย์ ดร. นพดล ธีระวงศ์ภิญโญ', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '123', email: '400015@bru.ac.th' },
+  { userlogin: '100113', fullName: 'อาจารย์ ดร. ทิพวัลย์ แสนคำ', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '118', email: '100113@bru.ac.th' },
+  { userlogin: '440228', fullName: 'ผู้ช่วยศาสตราจารย์ ดร. ผกามาศ บุตรสาลี', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '142', email: '440228@bru.ac.th' },
+  { userlogin: '100180', fullName: 'ผู้ช่วยศาสตราจารย์ ดร. บรรเจิด สอนสุภาพ', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '158', email: '100180@bru.ac.th' },
+  { userlogin: '100117', fullName: 'ผู้ช่วยศาสตราจารย์ วัชระ วชิรภัทรกุล', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '172', email: '100117@bru.ac.th' },
+  { userlogin: '900131', fullName: 'อาจารย์ กนิษฐา จอดนอก', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '198', email: '900131@bru.ac.th' },
+  { userlogin: '100080', fullName: 'ผู้ช่วยศาสตราจารย์ ดร. สมศักดิ์ จีวัฒนา', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '118', email: '100080@bru.ac.th' },
+  { userlogin: '100189', fullName: 'รองศาสตราจารย์ ดร. นฤมล สมคุณา', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '158', email: '100189@bru.ac.th' },
+  { userlogin: '100114', fullName: 'ผู้ช่วยศาสตราจารย์ ดร. ณัฐพล แสนคำ', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '118', email: '100114@bru.ac.th' },
+  { userlogin: '400011', fullName: 'ผู้ช่วยศาสตราจารย์ ดร. อโศก ไทยจันทรารักษ์', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '79', email: '400011@bru.ac.th' },
+  { userlogin: '100052', fullName: 'ผู้ช่วยศาสตราจารย์ ดร. ธิติ ปัญญาอินทร์', role: 'AUDITOR', positionName: 'กรรมการ', departmentId: '79', email: '100052@bru.ac.th' },
+  { userlogin: '100109', fullName: 'อาจารย์ พวงเพชร ราชประโคน', role: 'AUDITOR', positionName: 'กรรมการและเลขานุการ', departmentId: '1', email: '100109@bru.ac.th' },
+  { userlogin: '300036', fullName: 'นาย ลัด พอกกลาง', role: 'AUDITOR', positionName: 'กรรมการและเลขานุการ', departmentId: '40', email: '300036@bru.ac.th' },
+  { userlogin: '4300016', fullName: 'นางสาว พิมพ์วลัญช์ เชียงพฤกษ์', role: 'AUDITOR', positionName: 'กรรมการและผู้ช่วยเลขานุการ', departmentId: '40', email: '4300016@bru.ac.th' },
+  { userlogin: '600034', fullName: 'นาย ประสิทธิ์ จันลา', role: 'AUDITOR', positionName: 'กรรมการและผู้ช่วยเลขานุการ', departmentId: '40', email: '600034@bru.ac.th' },
+  { userlogin: '600100', fullName: 'นาย อภิสิทธิ์ แพนแก้ว', role: 'AUDITOR', positionName: 'กรรมการและผู้ช่วยเลขานุการ', departmentId: '40', email: '600100@bru.ac.th' },
+  { userlogin: '5500010', fullName: 'ดุสิต เพชรเนื้อนิล', role: 'AUDITOR', positionName: 'กรรมการและผู้ช่วยเลขานุการ', departmentId: '40', email: '5500010@bru.ac.th' },
+  { userlogin: '600099', fullName: 'อธิพงศ์ แต้มสี', role: 'AUDITOR', positionName: 'กรรมการและผู้ช่วยเลขานุการ', departmentId: '40', email: '600099@bru.ac.th' },
 ]
 
 const initialRounds = [
@@ -130,7 +531,7 @@ const initialRounds = [
 ]
 
 async function main() {
-  console.log('Seeding SQLite database...')
+  console.log('Seeding PostgreSQL database...')
 
   // 1. Categories
   for (const cat of categories) {
