@@ -26,11 +26,20 @@
 
       <!-- Header Card: Building & Assessor Selection -->
       <section class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
-        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">ข้อมูลการตรวจประเมิน</h3>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">ข้อมูลการตรวจประเมิน</h3>
+          <div class="inline-flex items-center gap-2 text-xs bg-slate-50 text-slate-700 px-3 py-1.5 rounded-xl border border-slate-200/70">
+            <span class="text-slate-400">ผู้ตรวจประเมิน:</span>
+            <span class="font-semibold text-slate-900">👤 {{ currentAssessorDisplayName }}</span>
+            <span v-if="userSession?.positionName || userSession?.role" class="text-[10px] bg-indigo-50 text-indigo-700 font-medium px-1.5 py-0.5 rounded">
+              {{ userSession?.positionName || userSession?.role }}
+            </span>
+          </div>
+        </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <!-- Evaluation Round Selection -->
-          <div class="sm:col-span-2">
+          <div>
             <label class="block text-xs font-medium text-slate-700 mb-1.5">รอบการประเมิน <span class="text-rose-500">*</span></label>
             <select
               v-model="selectedRoundId"
@@ -40,63 +49,6 @@
                 {{ r.name }} {{ r.status === 'OPEN' ? '(🟢 เปิดประเมิน)' : '(⚪ ปิดแล้ว)' }}
               </option>
             </select>
-          </div>
-
-          <!-- Building Selection -->
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1.5">ชื่ออาคาร <span class="text-rose-500">*</span></label>
-            <select
-              v-model="selectedBuildingId"
-              @change="onBuildingChange"
-              class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-            >
-              <option value="" disabled>-- เลือกอาคารที่ทำการตรวจ --</option>
-              <option v-for="b in buildings" :key="b.id" :value="b.id">
-                {{ b.code }} : {{ b.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Responsible Staff (Individual Selection) -->
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1.5">ผู้ปฏิบัติงาน / แม่บ้านที่จะประเมิน (รายบุคคล) <span class="text-rose-500">*</span></label>
-            
-            <div v-if="currentBuildingStaffs.length > 0 && !isCustomStaff" class="space-y-1.5">
-              <select
-                v-model="selectedStaffId"
-                @change="onStaffSelectChange"
-                class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-200 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-              >
-                <option value="" disabled>-- เลือกผู้ปฏิบัติงานรายบุคคล --</option>
-                <option v-for="s in currentBuildingStaffs" :key="s.id" :value="s.id">
-                  👤 {{ s.staffName }}
-                </option>
-                <option value="__CUSTOM__">➕ ระบุชื่ออื่น / ไม่อยู่ในรายชื่อ...</option>
-              </select>
-            </div>
-
-            <div v-else class="space-y-1.5">
-              <div class="flex items-center gap-1.5">
-                <input
-                  v-model="form.responsibleStaffText"
-                  type="text"
-                  placeholder="พิมพ์ชื่อ-สกุล ผู้ปฏิบัติงานรายบุคคล..."
-                  class="flex-1 text-sm px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                />
-                <button
-                  v-if="currentBuildingStaffs.length > 0"
-                  type="button"
-                  @click="isCustomStaff = false; selectedStaffId = ''"
-                  class="text-xs px-2.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors whitespace-nowrap"
-                  title="กลับไปเลือกจากรายชื่อ"
-                >
-                  เลือกจากรายชื่อ
-                </button>
-              </div>
-            </div>
-            <p v-if="form.responsibleStaffText" class="text-[11px] text-slate-400 mt-1">
-              กำลังประเมินรายบุคคล: <span class="text-indigo-600 font-semibold">{{ form.responsibleStaffText }}</span>
-            </p>
           </div>
 
           <!-- Date -->
@@ -109,26 +61,143 @@
             />
           </div>
 
-          <!-- Assessor -->
-          <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1.5">ชื่อผู้ตรวจประเมิน</label>
-            <input
-              v-model="form.assessorName"
-              type="text"
-              placeholder="ชื่อผู้ประเมิน / กรรมการ"
-              class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-            />
+          <!-- Building Selection (Searchable Combobox) -->
+          <div class="sm:col-span-2 relative" ref="buildingDropdownRef">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">
+              ชื่ออาคาร (ค้นหา/เลือก) <span class="text-rose-500">*</span>
+            </label>
+            
+            <div class="relative">
+              <input
+                type="text"
+                v-model="buildingSearchQuery"
+                @focus="isBuildingDropdownOpen = true"
+                @input="isBuildingDropdownOpen = true"
+                placeholder="-- พิมพ์ค้นหาหรือคลิกเพื่อเลือกชื่ออาคาร --"
+                class="w-full text-sm pl-3.5 pr-12 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium placeholder:text-slate-400 placeholder:font-normal"
+              />
+              
+              <!-- Chevron / Clear Button -->
+              <div class="absolute inset-y-0 right-0 pr-3 flex items-center gap-1.5">
+                <button
+                  v-if="selectedBuildingId"
+                  type="button"
+                  @click="clearBuildingSelection"
+                  class="text-slate-400 hover:text-slate-600 text-xs p-1 rounded-full hover:bg-slate-100 transition-colors"
+                  title="ล้างการเลือกอาคาร"
+                >
+                  ✕
+                </button>
+                <button
+                  type="button"
+                  @click="isBuildingDropdownOpen = !isBuildingDropdownOpen"
+                  class="text-slate-400 hover:text-slate-600 p-1 focus:outline-none transition-transform duration-200"
+                  :class="isBuildingDropdownOpen ? 'rotate-180' : ''"
+                  tabindex="-1"
+                >
+                  <span class="text-[10px]">▼</span>
+                </button>
+              </div>
+
+              <!-- Dropdown Menu -->
+              <div
+                v-if="isBuildingDropdownOpen"
+                class="absolute z-30 left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-xl py-1 text-sm divide-y divide-slate-100"
+              >
+                <div
+                  v-for="b in filteredBuildings"
+                  :key="b.id"
+                  @click="selectBuilding(b)"
+                  class="px-4 py-2.5 hover:bg-indigo-50 cursor-pointer flex items-center justify-between transition-colors"
+                  :class="selectedBuildingId === b.id ? 'bg-indigo-50/80 text-indigo-700 font-semibold' : 'text-slate-700'"
+                >
+                  <span>{{ b.name }}</span>
+                  <span v-if="selectedBuildingId === b.id" class="text-indigo-600 text-xs font-medium">✓ เลือกอยู่</span>
+                </div>
+
+                <div v-if="filteredBuildings.length === 0" class="px-4 py-3 text-center text-xs text-slate-400">
+                  ไม่พบอาคารที่ตรงกับ "{{ buildingSearchQuery }}"
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Responsible Staff (Button List) -->
+          <div class="sm:col-span-2 space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-medium text-slate-700">
+                ผู้ปฏิบัติงาน / แม่บ้านที่จะประเมิน (รายบุคคล) <span class="text-rose-500">*</span>
+              </label>
+              <span v-if="form.responsibleStaffText" class="text-[11px] text-slate-500">
+                กำลังเลือก: <strong class="text-indigo-600 font-semibold">{{ form.responsibleStaffText }}</strong>
+                <span v-if="currentAssessmentId" class="ml-1 text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                  (มีผลประเมินเดิม)
+                </span>
+              </span>
+            </div>
+
+            <div v-if="!selectedBuildingId" class="text-xs text-slate-400 italic py-2">
+              กรุณาเลือกอาคารด้านบน เพื่อแสดงรายชื่อผู้ดูแล
+            </div>
+
+            <div v-else class="space-y-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <!-- Staff Buttons -->
+                <button
+                  v-for="s in currentBuildingStaffs"
+                  :key="s.id"
+                  type="button"
+                  @click="selectStaff(s)"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all"
+                  :class="selectedStaffId === s.id && !isCustomStaff
+                    ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20 font-semibold'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300'"
+                >
+                  <span>{{ formatStaffDisplayName(s.staffName) }}</span>
+                  <span
+                    v-if="isStaffEvaluated(s.id, s.staffName)"
+                    class="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold"
+                    :class="selectedStaffId === s.id && !isCustomStaff ? 'bg-white text-emerald-600' : 'bg-emerald-100 text-emerald-700'"
+                    title="ประเมินแล้ว"
+                  >
+                    ✓
+                  </span>
+                </button>
+
+                <!-- Custom Staff Button -->
+                <button
+                  type="button"
+                  @click="selectCustomStaff"
+                  class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all"
+                  :class="isCustomStaff
+                    ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20 font-semibold'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-dashed border-slate-300 hover:border-slate-400'"
+                >
+                  <span>➕ ระบุชื่ออื่น</span>
+                </button>
+              </div>
+
+              <!-- Custom Staff Textbox -->
+              <div v-if="isCustomStaff" class="pt-1 flex items-center gap-2">
+                <input
+                  v-model="form.responsibleStaffText"
+                  type="text"
+                  placeholder="พิมพ์ชื่อ-สกุล ผู้ปฏิบัติงานรายบุคคล..."
+                  class="flex-1 text-sm px-3.5 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50/20 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- Category Filter Tabs (Horizontal touch slider for mobile) -->
-      <div class="overflow-x-auto no-scrollbar py-1 -mx-4 px-4 flex items-center space-x-2">
+      <div id="evaluation-questions-top" class="scroll-mt-4 overflow-x-auto no-scrollbar py-1 -mx-4 px-4 flex items-center space-x-2">
         <button
           v-for="cat in tabOptions"
           :key="cat.id"
           type="button"
-          @click="activeTab = cat.id"
+          @click="changeTab(cat.id)"
           class="flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium transition-all"
           :class="activeTab === cat.id ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'"
         >
@@ -166,7 +235,7 @@
           <button
             v-if="activeTab > 1"
             type="button"
-            @click="activeTab--"
+            @click="changeTab(activeTab - 1)"
             class="px-4 py-2 rounded-xl text-xs font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
           >
             ← หมวดก่อนหน้า
@@ -175,7 +244,7 @@
 
           <button
             type="button"
-            @click="activeTab++"
+            @click="changeTab(activeTab + 1)"
             class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
           >
             {{ activeTab === 7 ? 'ไปยังข้อค้นพบตอนที่ 2 →' : 'หมวดถัดไป →' }}
@@ -243,7 +312,7 @@
         <div class="flex items-center justify-between pt-2">
           <button
             type="button"
-            @click="activeTab = 7"
+            @click="changeTab(7)"
             class="px-4 py-2 rounded-xl text-xs font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
           >
             ← ย้อนกลับไปหมวดที่ 7
@@ -256,7 +325,7 @@
             class="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-95 transition-all flex items-center space-x-2 disabled:opacity-50"
           >
             <span v-if="isSubmitting">กำลังบันทึก...</span>
-            <span v-else>✓ ยืนยันและส่งผลการประเมิน</span>
+            <span v-else>{{ currentAssessmentId ? '✓ บันทึกการแก้ไขผลการประเมิน' : '✓ ยืนยันและส่งผลการประเมิน' }}</span>
           </button>
         </div>
       </section>
@@ -276,7 +345,7 @@
         <button
           v-if="activeTab < 8"
           type="button"
-          @click="activeTab = 8"
+          @click="changeTab(8)"
           class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-sm"
         >
           สรุปและลงนาม →
@@ -288,7 +357,7 @@
           :disabled="isSubmitting"
           class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
         >
-          ส่งผลประเมิน
+          {{ currentAssessmentId ? 'บันทึกแก้ไข' : 'ส่งผลประเมิน' }}
         </button>
       </template>
     </ScoreSummaryBar>
@@ -319,7 +388,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { onClickOutside } from '@vueuse/core'
 import { EVALUATION_CATEGORIES, EVALUATION_QUESTIONS } from '~/shared/constants/questions'
 import { calculateEvaluation } from '~/shared/types/evaluation'
 
@@ -354,6 +424,74 @@ const colorCriteria = reactive({
   redLabel: 'ต้องปรับปรุงเร่งด่วน'
 })
 const userSession = useCookie<any>('bru_user_session')
+
+// Building Searchable Dropdown State
+const buildingDropdownRef = ref<HTMLElement | null>(null)
+const buildingSearchQuery = ref('')
+const isBuildingDropdownOpen = ref(false)
+
+const filteredBuildings = computed(() => {
+  const query = buildingSearchQuery.value.trim().toLowerCase()
+  const list = query
+    ? buildings.value.filter(b => b.name && b.name.toLowerCase().includes(query))
+    : [...buildings.value]
+
+  return list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th', { numeric: true }))
+})
+
+function selectBuilding(b: any) {
+  selectedBuildingId.value = b.id
+  buildingSearchQuery.value = b.name
+  isBuildingDropdownOpen.value = false
+  onBuildingChange()
+}
+
+function clearBuildingSelection() {
+  selectedBuildingId.value = ''
+  buildingSearchQuery.value = ''
+  isBuildingDropdownOpen.value = false
+  onBuildingChange()
+}
+
+onClickOutside(buildingDropdownRef, () => {
+  isBuildingDropdownOpen.value = false
+  if (selectedBuildingId.value) {
+    const current = buildings.value.find(b => b.id === selectedBuildingId.value)
+    if (current) {
+      buildingSearchQuery.value = current.name
+    }
+  } else {
+    buildingSearchQuery.value = ''
+  }
+})
+
+// Tab Navigation with Auto Scroll to Top
+function changeTab(tabId: number) {
+  activeTab.value = tabId
+  if (process.client) {
+    nextTick(() => {
+      const el = document.getElementById('evaluation-questions-top')
+      if (el) {
+        const rect = el.getBoundingClientRect()
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+        window.scrollTo({
+          top: rect.top + scrollTop - 20,
+          behavior: 'smooth'
+        })
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    })
+  }
+}
+
+// Assessment Tracking State
+const currentAssessmentId = ref<string | null>(null)
+const existingAssessments = ref<any[]>([])
+
+const currentAssessorDisplayName = computed(() => {
+  return userSession.value?.fullName || form.assessorName || 'กรรมการผู้ตรวจประเมิน'
+})
 
 // Form State
 const form = reactive({
@@ -436,45 +574,158 @@ function setPhotoUrl(qId: number, url: string) {
   saveDraft()
 }
 
+// Helpers
+function formatStaffDisplayName(fullName: string): string {
+  if (!fullName) return ''
+  return fullName.replace(/^(?:นาย|นางสาว|นาง|น\.ส\.|ว่าที่\s*ร\.ต\.|อาจารย์|ดร\.|ผศ\.\s*ดร\.|ผศ\.|รศ\.\s*ดร\.|รศ\.|ศ\.)\s*/g, '').trim()
+}
+
 const currentBuildingStaffs = computed(() => {
   const b = buildings.value.find(item => item.id === selectedBuildingId.value)
   return b?.staffs || []
 })
 
-function onBuildingChange() {
-  const b = buildings.value.find(item => item.id === selectedBuildingId.value)
-  if (b) {
-    form.buildingName = b.name
-    isCustomStaff.value = false
-    if (b.staffs && b.staffs.length > 0) {
-      selectedStaffId.value = b.staffs[0].id
-      form.staffId = b.staffs[0].id
-      form.responsibleStaffText = b.staffs[0].staffName
+async function fetchExistingAssessments() {
+  if (!selectedBuildingId.value || !selectedRoundId.value) {
+    existingAssessments.value = []
+    return
+  }
+  try {
+    const assessorId = userSession.value?.id || userSession.value?.userlogin
+    const res: any = await $fetch('/api/assessments', {
+      params: {
+        roundId: selectedRoundId.value,
+        buildingId: selectedBuildingId.value,
+        assessorId: assessorId || undefined
+      }
+    })
+    if (res?.ok && Array.isArray(res.data)) {
+      existingAssessments.value = res.data
     } else {
-      selectedStaffId.value = ''
-      form.staffId = ''
-      form.responsibleStaffText = ''
-      isCustomStaff.value = true
+      existingAssessments.value = []
     }
+  } catch (err) {
+    console.error('Failed to fetch existing assessments', err)
+    existingAssessments.value = []
+  }
+}
+
+function getExistingAssessment(staffId?: string | null, staffName?: string | null) {
+  if (!existingAssessments.value.length) return null
+  return existingAssessments.value.find((a: any) => {
+    if (staffId && a.staffId && a.staffId === staffId) return true
+    if (staffName && a.responsibleStaffText && a.responsibleStaffText.trim() === staffName.trim()) return true
+    return false
+  }) || null
+}
+
+function isStaffEvaluated(staffId?: string | null, staffName?: string | null): boolean {
+  return !!getExistingAssessment(staffId, staffName)
+}
+
+function selectStaff(s: any) {
+  isCustomStaff.value = false
+  selectedStaffId.value = s.id
+  form.staffId = s.id
+  form.responsibleStaffText = s.staffName
+
+  const existing = getExistingAssessment(s.id, s.staffName)
+  if (existing) {
+    loadExistingAssessmentData(existing)
+  } else {
+    resetScoresAndFindings()
   }
   saveDraft()
 }
 
-function onStaffSelectChange() {
-  if (selectedStaffId.value === '__CUSTOM__') {
-    isCustomStaff.value = true
+function selectCustomStaff() {
+  isCustomStaff.value = true
+  selectedStaffId.value = '__CUSTOM__'
+  form.staffId = ''
+  form.responsibleStaffText = ''
+  resetScoresAndFindings()
+  saveDraft()
+}
+
+function loadExistingAssessmentData(existing: any) {
+  currentAssessmentId.value = existing.id
+  form.assessmentDate = existing.assessedAt
+    ? new Date(existing.assessedAt).toISOString().split('T')[0]
+    : form.assessmentDate
+  form.strengthsSummary = existing.strengthsSummary || ''
+  form.urgentProblems = existing.urgentProblems || ''
+  form.correctivePlan = existing.correctivePlan || ''
+  form.targetDeadline = existing.targetDeadline
+    ? new Date(existing.targetDeadline).toISOString().split('T')[0]
+    : ''
+  form.signatureImage = existing.signatureImage || ''
+
+  // ล้างค่าคำถามก่อนโหลด
+  for (const q of dynamicQuestions.value) {
+    form.scores[q.id] = { score: null, isNA: false, defectNote: '', photoUrl: '' }
+  }
+
+  // นำคะแนนเดิมมาใส่
+  if (Array.isArray(existing.scores)) {
+    for (const sc of existing.scores) {
+      if (form.scores[sc.questionItemId]) {
+        form.scores[sc.questionItemId] = {
+          score: sc.score !== null && sc.score !== undefined ? Number(sc.score) : null,
+          isNA: Boolean(sc.isNA),
+          defectNote: sc.defectNote || '',
+          photoUrl: sc.photoUrl || ''
+        }
+      }
+    }
+  }
+
+  showToast(`โหลดผลการประเมินของ "${formatStaffDisplayName(existing.responsibleStaffText)}" เรียบร้อยแล้ว`, 'success')
+}
+
+function resetScoresAndFindings() {
+  currentAssessmentId.value = null
+  form.strengthsSummary = ''
+  form.urgentProblems = ''
+  form.correctivePlan = ''
+  form.targetDeadline = ''
+  form.signatureImage = ''
+  for (const q of dynamicQuestions.value) {
+    form.scores[q.id] = { score: null, isNA: false, defectNote: '', photoUrl: '' }
+  }
+}
+
+async function onBuildingChange() {
+  const b = buildings.value.find(item => item.id === selectedBuildingId.value)
+  if (b) {
+    form.buildingName = b.name
+    await fetchExistingAssessments()
+
+    if (b.staffs && b.staffs.length > 0) {
+      selectStaff(b.staffs[0])
+    } else {
+      selectCustomStaff()
+    }
+  } else {
+    existingAssessments.value = []
+    selectedStaffId.value = ''
     form.staffId = ''
     form.responsibleStaffText = ''
-  } else {
-    isCustomStaff.value = false
-    const s = currentBuildingStaffs.value.find((item: any) => item.id === selectedStaffId.value)
-    if (s) {
-      form.staffId = s.id
-      form.responsibleStaffText = s.staffName
-    }
+    resetScoresAndFindings()
   }
   saveDraft()
 }
+
+watch(selectedRoundId, async () => {
+  if (selectedBuildingId.value) {
+    await fetchExistingAssessments()
+    if (selectedStaffId.value && !isCustomStaff.value) {
+      const s = currentBuildingStaffs.value.find((item: any) => item.id === selectedStaffId.value)
+      if (s) {
+        selectStaff(s)
+      }
+    }
+  }
+})
 
 // Auto-Save Draft
 const DRAFT_KEY = 'bru_eval_draft_v1'
@@ -484,6 +735,7 @@ function saveDraft() {
       selectedBuildingId: selectedBuildingId.value,
       selectedStaffId: selectedStaffId.value,
       isCustomStaff: isCustomStaff.value,
+      currentAssessmentId: currentAssessmentId.value,
       form
     }))
   }
@@ -498,7 +750,10 @@ function loadDraft() {
         selectedBuildingId.value = parsed.selectedBuildingId || ''
         selectedStaffId.value = parsed.selectedStaffId || ''
         isCustomStaff.value = !!parsed.isCustomStaff
-        Object.assign(form, parsed.form)
+        currentAssessmentId.value = parsed.currentAssessmentId || null
+        if (parsed.form) {
+          Object.assign(form, parsed.form)
+        }
       } catch (e) {
         console.error('Failed to parse draft', e)
       }
@@ -522,11 +777,19 @@ onMounted(async () => {
       $fetch('/api/questions'),
       $fetch('/api/settings/color-criteria')
     ])
-    if (bRes?.data) buildings.value = bRes.data
+    if (bRes?.data) {
+      buildings.value = [...bRes.data].sort((a: any, b: any) => (a.name || '').localeCompare(b.name || '', 'th', { numeric: true }))
+      if (selectedBuildingId.value) {
+        const current = buildings.value.find((b: any) => b.id === selectedBuildingId.value)
+        if (current) buildingSearchQuery.value = current.name
+      }
+    }
     if (rRes?.data) {
       availableRounds.value = rRes.data
-      const openRound = rRes.data.find((r: any) => r.status === 'OPEN')
-      if (openRound) selectedRoundId.value = openRound.id
+      if (!selectedRoundId.value) {
+        const openRound = rRes.data.find((r: any) => r.status === 'OPEN')
+        if (openRound) selectedRoundId.value = openRound.id
+      }
     }
     if (qRes?.ok) {
       if (qRes.categories?.length) dynamicCategories.value = qRes.categories
@@ -547,6 +810,10 @@ onMounted(async () => {
     }
     if (cRes?.data?.building) {
       Object.assign(colorCriteria, cRes.data.building)
+    }
+
+    if (selectedBuildingId.value) {
+      await fetchExistingAssessments()
     }
   } catch (err) {
     console.error('Error fetching data', err)
@@ -591,8 +858,13 @@ async function submitAssessment() {
 
   isSubmitting.value = true
   try {
-    const res: any = await $fetch('/api/assessments', {
-      method: 'POST',
+    const endpoint = currentAssessmentId.value
+      ? `/api/assessments/${currentAssessmentId.value}`
+      : '/api/assessments'
+    const method = currentAssessmentId.value ? 'PUT' : 'POST'
+
+    const res: any = await $fetch(endpoint, {
+      method,
       body: {
         roundId: selectedRoundId.value,
         buildingId: selectedBuildingId.value,
@@ -600,7 +872,7 @@ async function submitAssessment() {
         staffId: form.staffId || null,
         responsibleStaffText: form.responsibleStaffText.trim(),
         assessorId: userSession.value?.id || userSession.value?.userlogin || null,
-        assessorName: form.assessorName,
+        assessorName: currentAssessorDisplayName.value,
         assessedAt: form.assessmentDate,
         scores: form.scores,
         strengthsSummary: form.strengthsSummary,
@@ -613,7 +885,11 @@ async function submitAssessment() {
 
     if (res?.ok) {
       if (process.client) localStorage.removeItem(DRAFT_KEY)
-      showToast(`บันทึกผลการประเมินสำเร็จ! (${res.data?.gradeLabel || evaluationResult.value.gradeLabel})`)
+      await fetchExistingAssessments()
+      showToast(currentAssessmentId.value
+        ? 'บันทึกการแก้ไขผลการประเมินสำเร็จ!'
+        : `บันทึกผลการประเมินสำเร็จ! (${res.data?.gradeLabel || evaluationResult.value.gradeLabel})`
+      )
       setTimeout(() => {
         navigateTo('/')
       }, 1200)

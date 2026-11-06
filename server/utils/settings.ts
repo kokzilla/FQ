@@ -1,5 +1,5 @@
 import { prisma } from './prisma'
-import { isDbReady } from './dbState'
+import { isDbReady, requireDatabase } from './dbState'
 
 export interface ColorThresholdConfig {
   greenMin: number
@@ -31,48 +31,48 @@ export const DEFAULT_COLOR_CRITERIA: ColorCriteriaSettings = {
   }
 }
 
-// In-memory fallback if DB is not ready or for instant testing
-let inMemorySettings: ColorCriteriaSettings = JSON.parse(JSON.stringify(DEFAULT_COLOR_CRITERIA))
-
 export async function getColorCriteriaSettings(): Promise<ColorCriteriaSettings> {
-  if (await isDbReady()) {
-    try {
-      const records = await (prisma as any).systemSetting.findMany({
-        where: {
-          key: {
-            in: ['criteria_building', 'criteria_staff']
-          }
-        }
-      })
-
-      const result: ColorCriteriaSettings = JSON.parse(JSON.stringify(DEFAULT_COLOR_CRITERIA))
-
-      for (const rec of records) {
-        if (rec.key === 'criteria_building') {
-          try {
-            result.building = { ...DEFAULT_COLOR_CRITERIA.building, ...JSON.parse(rec.value) }
-          } catch (e) {}
-        } else if (rec.key === 'criteria_staff') {
-          try {
-            result.staff = { ...DEFAULT_COLOR_CRITERIA.staff, ...JSON.parse(rec.value) }
-          } catch (e) {}
-        }
-      }
-
-      inMemorySettings = result
-      return result
-    } catch (err) {
-      console.error('Error fetching settings from DB:', err)
-    }
+  const ready = await isDbReady()
+  if (!ready) {
+    return JSON.parse(JSON.stringify(DEFAULT_COLOR_CRITERIA))
   }
 
-  return inMemorySettings
+  try {
+    const records = await (prisma as any).systemSetting.findMany({
+      where: {
+        key: {
+          in: ['criteria_building', 'criteria_staff']
+        }
+      }
+    })
+
+    const result: ColorCriteriaSettings = JSON.parse(JSON.stringify(DEFAULT_COLOR_CRITERIA))
+
+    for (const rec of records) {
+      if (rec.key === 'criteria_building') {
+        try {
+          result.building = { ...DEFAULT_COLOR_CRITERIA.building, ...JSON.parse(rec.value) }
+        } catch (e) {}
+      } else if (rec.key === 'criteria_staff') {
+        try {
+          result.staff = { ...DEFAULT_COLOR_CRITERIA.staff, ...JSON.parse(rec.value) }
+        } catch (e) {}
+      }
+    }
+
+    return result
+  } catch (err) {
+    console.error('Error fetching settings from DB:', err)
+    return JSON.parse(JSON.stringify(DEFAULT_COLOR_CRITERIA))
+  }
 }
 
 export async function saveColorCriteriaSettings(
   buildingCriteria?: Partial<ColorThresholdConfig>,
   staffCriteria?: Partial<ColorThresholdConfig>
 ): Promise<ColorCriteriaSettings> {
+  await requireDatabase()
+
   const current = await getColorCriteriaSettings()
 
   if (buildingCriteria) {
@@ -93,27 +93,19 @@ export async function saveColorCriteriaSettings(
     }
   }
 
-  inMemorySettings = current
-
-  if (await isDbReady()) {
-    try {
-      if (buildingCriteria) {
-        await (prisma as any).systemSetting.upsert({
-          where: { key: 'criteria_building' },
-          update: { value: JSON.stringify(current.building) },
-          create: { key: 'criteria_building', value: JSON.stringify(current.building) }
-        })
-      }
-      if (staffCriteria) {
-        await (prisma as any).systemSetting.upsert({
-          where: { key: 'criteria_staff' },
-          update: { value: JSON.stringify(current.staff) },
-          create: { key: 'criteria_staff', value: JSON.stringify(current.staff) }
-        })
-      }
-    } catch (err) {
-      console.error('Error saving settings to DB:', err)
-    }
+  if (buildingCriteria) {
+    await (prisma as any).systemSetting.upsert({
+      where: { key: 'criteria_building' },
+      update: { value: JSON.stringify(current.building) },
+      create: { key: 'criteria_building', value: JSON.stringify(current.building) }
+    })
+  }
+  if (staffCriteria) {
+    await (prisma as any).systemSetting.upsert({
+      where: { key: 'criteria_staff' },
+      update: { value: JSON.stringify(current.staff) },
+      create: { key: 'criteria_staff', value: JSON.stringify(current.staff) }
+    })
   }
 
   return current

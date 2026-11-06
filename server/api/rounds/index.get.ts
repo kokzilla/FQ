@@ -1,48 +1,25 @@
-import { defineEventHandler } from 'h3'
+import { defineEventHandler, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
-import { isDbReady } from '../../utils/dbState'
-
-export const evaluationRounds = [
-  {
-    id: 'round-2568',
-    name: 'รอบการประเมินประจำปีงบประมาณ 2568',
-    year: '2568',
-    description: 'รอบประเมินมาตรฐานความสะอาดประจำปี 2568 ทั่วมหาวิทยาลัย',
-    startDate: '2025-10-01',
-    endDate: '2026-09-30',
-    status: 'CLOSED',
-    createdAt: new Date('2025-10-01').toISOString()
-  },
-  {
-    id: 'round-2570',
-    name: 'รอบการประเมินประจำปีงบประมาณ 2570',
-    year: '2570',
-    description: 'รอบประเมินปัจจุบัน มหาวิทยาลัยราชภัฏบุรีรัมย์',
-    startDate: '2026-10-01',
-    endDate: '2027-09-30',
-    status: 'OPEN',
-    createdAt: new Date('2026-10-01').toISOString()
-  }
-]
+import { requireDatabase } from '../../utils/dbState'
 
 export async function getAllEvaluationRounds() {
-  if (await isDbReady()) {
-    try {
-      const list = await prisma.evaluationRound.findMany({
-        orderBy: { year: 'desc' }
-      })
-      if (list.length > 0) {
-        return list
-      }
-    } catch (err) {}
-  }
-  return [...evaluationRounds].sort((a, b) => (a.year < b.year ? 1 : -1))
+  await requireDatabase()
+  return await prisma.evaluationRound.findMany({
+    orderBy: { year: 'desc' }
+  })
 }
 
 export default defineEventHandler(async () => {
-  const data = await getAllEvaluationRounds()
-  return {
-    ok: true,
-    data
+  try {
+    const data = await getAllEvaluationRounds()
+    return {
+      ok: true,
+      data
+    }
+  } catch (err: any) {
+    throw createError({
+      statusCode: err.statusCode || 500,
+      message: 'เกิดข้อผิดพลาดในการดึงรอบการประเมิน: ' + err.message
+    })
   }
 })

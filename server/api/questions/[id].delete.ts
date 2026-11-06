@@ -1,25 +1,22 @@
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
-import { isDbReady } from '../../utils/dbState'
-import { dynamicQuestions } from './index.get'
+import { requireDatabase } from '../../utils/dbState'
 
 export default defineEventHandler(async (event) => {
+  await requireDatabase()
+
   const idStr = getRouterParam(event, 'id')
   const id = Number(idStr)
 
-  if (await isDbReady()) {
-    try {
-      await prisma.questionItem.delete({
-        where: { id }
-      })
-      return { ok: true, message: 'ลบข้อคำถามเรียบร้อยแล้ว' }
-    } catch (err: any) {}
+  try {
+    await prisma.questionItem.delete({
+      where: { id }
+    })
+    return { ok: true, message: 'ลบข้อคำถามเรียบร้อยแล้ว' }
+  } catch (err: any) {
+    throw createError({
+      statusCode: 500,
+      message: 'เกิดข้อผิดพลาดในการลบข้อคำถาม: ' + err.message
+    })
   }
-
-  const index = dynamicQuestions.findIndex(q => q.id === id)
-  if (index === -1) {
-    throw createError({ statusCode: 404, message: 'ไม่พบข้อคำถามนี้' })
-  }
-  dynamicQuestions.splice(index, 1)
-  return { ok: true, message: 'ลบข้อคำถามเรียบร้อยแล้ว' }
 })

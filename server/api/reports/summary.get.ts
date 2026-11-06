@@ -1,61 +1,61 @@
-import { defineEventHandler, getQuery } from 'h3'
-import { inMemoryAssessments } from '../assessments/index.post'
+import { defineEventHandler, getQuery, createError } from 'h3'
 import { getAllEvaluationRounds } from '../rounds/index.get'
 import { getDynamicQuestionsAndCategories } from '../questions/index.get'
 import { prisma } from '../../utils/prisma'
-import { isDbReady } from '../../utils/dbState'
+import { requireDatabase } from '../../utils/dbState'
 import { getColorCriteriaSettings, evaluateColorGrade } from '../../utils/settings'
 
 export default defineEventHandler(async (event) => {
-  ensureMockAssessments()
+  await requireDatabase()
 
   const query = getQuery(event)
   const roundId = (query.roundId as string) || 'round-2570'
 
   // ดึงข้อมูลการประเมินจากฐานข้อมูล PostgreSQL
   let allAssessments: any[] = []
-  if (await isDbReady()) {
-    try {
-      const dbAssessments = await prisma.assessment.findMany({
-        include: {
-          building: true,
-          assessor: true,
-          scores: true
-        },
-        orderBy: { createdAt: 'desc' }
-      })
-      allAssessments = dbAssessments.map(d => {
-        const scoresMap: any = {}
-        for (const s of d.scores) {
-          scoresMap[s.questionItemId] = {
-            score: s.score,
-            isNA: s.isNA,
-            defectNote: s.defectNote,
-            photoUrl: s.photoUrl
-          }
+  try {
+    const dbAssessments = await prisma.assessment.findMany({
+      include: {
+        building: true,
+        assessor: true,
+        scores: true
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    allAssessments = dbAssessments.map(d => {
+      const scoresMap: any = {}
+      for (const s of d.scores) {
+        scoresMap[s.questionItemId] = {
+          score: s.score,
+          isNA: s.isNA,
+          defectNote: s.defectNote,
+          photoUrl: s.photoUrl
         }
-        return {
-          id: d.id,
-          roundId: d.roundId || 'round-2570',
-          buildingId: d.buildingId,
-          buildingName: d.building?.name || 'อาคาร',
-          staffId: (d as any).staffId || null,
-          responsibleStaffText: d.responsibleStaffText,
-          assessorId: d.assessorId,
-          assessorName: d.assessor?.fullName || 'ผู้ตรวจประเมิน',
-          assessedAt: d.assessedAt.toISOString(),
-          totalScoreObtained: d.totalScoreObtained,
-          totalMaxScore: d.totalMaxScore,
-          percentage: d.percentage,
-          grade: d.grade,
-          gradeLabel: d.grade,
-          urgentProblems: d.urgentProblems || '',
-          scores: scoresMap
-        }
-      })
-    } catch (e) {}
-  } else {
-    allAssessments = [...inMemoryAssessments]
+      }
+      return {
+        id: d.id,
+        roundId: d.roundId || 'round-2570',
+        buildingId: d.buildingId,
+        buildingName: d.building?.name || 'อาคาร',
+        staffId: (d as any).staffId || null,
+        responsibleStaffText: d.responsibleStaffText,
+        assessorId: d.assessorId,
+        assessorName: d.assessor?.fullName || 'ผู้ตรวจประเมิน',
+        assessedAt: d.assessedAt.toISOString(),
+        totalScoreObtained: d.totalScoreObtained,
+        totalMaxScore: d.totalMaxScore,
+        percentage: d.percentage,
+        grade: d.grade,
+        gradeLabel: d.grade,
+        urgentProblems: d.urgentProblems || '',
+        scores: scoresMap
+      }
+    })
+  } catch (e: any) {
+    throw createError({
+      statusCode: 500,
+      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลรายงานจากฐานข้อมูล: ' + e.message
+    })
   }
 
   // ดึงการตั้งค่าเกณฑ์สี รอบการประเมิน และรายการข้อคำถามล่าสุด

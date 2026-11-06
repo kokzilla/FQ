@@ -1,9 +1,10 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
-import { isDbReady } from '../../utils/dbState'
-import { localUsers } from './index.get'
+import { requireDatabase } from '../../utils/dbState'
 
 export default defineEventHandler(async (event) => {
+  await requireDatabase()
+
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
   const { role, fullName, positionName } = body
@@ -12,27 +13,20 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Missing user id' })
   }
 
-  if (await isDbReady()) {
-    try {
-      const updated = await prisma.user.update({
-        where: { id },
-        data: {
-          ...(role && { role }),
-          ...(fullName && { fullName }),
-          ...(positionName && { positionName })
-        }
-      })
-      return { ok: true, data: updated }
-    } catch (err: any) {}
+  try {
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(role && { role }),
+        ...(fullName && { fullName }),
+        ...(positionName && { positionName })
+      }
+    })
+    return { ok: true, data: updated }
+  } catch (err: any) {
+    throw createError({
+      statusCode: 500,
+      message: 'เกิดข้อผิดพลาดในการแก้ไขข้อมูลผู้ใช้งาน: ' + err.message
+    })
   }
-
-  // Fast Local fallback (0ms)
-  const target = localUsers.find(u => u.id === id || u.userlogin === id)
-  if (target) {
-    if (role) target.role = role
-    if (fullName) target.fullName = fullName
-    if (positionName) target.positionName = positionName
-    return { ok: true, data: target }
-  }
-  throw createError({ statusCode: 404, message: 'ไม่พบบุคลากรนี้ในระบบ' })
 })

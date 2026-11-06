@@ -1,9 +1,10 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
-import { isDbReady } from '../../utils/dbState'
-import { evaluationRounds } from './index.get'
+import { requireDatabase } from '../../utils/dbState'
 
 export default defineEventHandler(async (event) => {
+  await requireDatabase()
+
   const body = await readBody(event)
   const { name, year, description, startDate, endDate } = body || {}
 
@@ -22,20 +23,15 @@ export default defineEventHandler(async (event) => {
     status: 'OPEN'
   }
 
-  if (await isDbReady()) {
-    try {
-      const round = await prisma.evaluationRound.create({
-        data: roundPayload
-      })
-      return { ok: true, data: round }
-    } catch (err: any) {}
+  try {
+    const round = await prisma.evaluationRound.create({
+      data: roundPayload
+    })
+    return { ok: true, data: round }
+  } catch (err: any) {
+    throw createError({
+      statusCode: 500,
+      message: 'เกิดข้อผิดพลาดในการสร้างรอบการประเมิน: ' + err.message
+    })
   }
-
-  const memRound = {
-    ...roundPayload,
-    description: roundPayload.description || '',
-    createdAt: new Date().toISOString()
-  }
-  evaluationRounds.unshift(memRound)
-  return { ok: true, data: memRound }
 })
