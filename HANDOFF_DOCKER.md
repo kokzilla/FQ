@@ -12,7 +12,7 @@
 | **การแก้ไขข้อผิดพลาดโค้ด** |  **เสร็จสิ้น** | แก้ไข Syntax error ใน `server/api/reports/export-excel.get.ts` และทดสอบ `pnpm run build` ผ่านสมบูรณ์ 100% |
 | **โครงสร้าง Docker** |  **เสร็จสิ้น** | จัดทำ `Dockerfile` (Multi-stage Node 20 Alpine), `docker-compose.yml`, `.dockerignore` เรียบร้อย |
 | **แพ็กเกจ Source Code สำหรับ FTP** |  **เสร็จสิ้น** | ไฟล์ `deploy-fq.zip` (0.18 MB) สร้างเสร็จพร้อมใช้งาน (ไม่มี `node_modules` ปะปน) |
-| **ฐานข้อมูล (Database)** |  **เสร็จสิ้น** | สร้างไฟล์สำรอง `backup_bru_facility_evaluation.sql` แบบ Universal Script (ตัด `OWNER` และ `transaction_timeout` ออกแล้ว รันบน pgAdmin ผ่านฉลุย) |
+| **ฐานข้อมูล (Database)** |  **เสร็จสิ้น** | สร้างไฟล์สำรอง `backups/backup_bru_facility_evaluation.sql` แบบ Universal Script (ตัด `OWNER` และ `transaction_timeout` ออกแล้ว รันบน pgAdmin ผ่านฉลุย) |
 | **โจทย์ที่ต้องทำต่อที่บ้าน** | ⏳ **รอดำเนินการ** | **Admin แจ้งให้เราเป็นผู้ Build Docker Image แล้วส่งไฟล์อิมเมจ (.tar) ให้** |
 
 ---
@@ -35,13 +35,13 @@ docker build -t bru-fq-app:latest .
 ### ขั้นตอนที่ 3: Export Image เป็นไฟล์เดี่ยว (.tar)
 พิมพ์คำสั่ง:
 ```bash
-docker save -o bru-fq-app.tar bru-fq-app:latest
+docker save -o backups/bru-fq-app.tar bru-fq-app:latest
 ```
-* คุณจะได้ไฟล์ **`bru-fq-app.tar`** (ขนาดประมาณ 200–300 MB) อยู่ในโฟลเดอร์โปรเจกต์
+* คุณจะได้ไฟล์ **`backups/bru-fq-app.tar`** (ขนาดประมาณ 200–300 MB) อยู่ในโฟลเดอร์ `backups/`
 
 ### ขั้นตอนที่ 4: อัปโหลดขึ้นเซิร์ฟเวอร์ผ่าน FileZilla
 เปิด FileZilla เชื่อมต่อไปยัง FTP ของเซิร์ฟเวอร์ และอัปโหลดไฟล์เหล่านี้ขึ้นไป:
-1. **`bru-fq-app.tar`** (ไฟล์ Image ที่เพิ่งสร้าง)
+1. **`backups/bru-fq-app.tar`** (ไฟล์ Image ที่เพิ่งสร้าง)
 2. **`docker-compose.yml`**
 3. **`.env`** (ไฟล์คอนฟิกที่ระบุ `DATABASE_URL` ของฐานข้อมูลเดิม)
 

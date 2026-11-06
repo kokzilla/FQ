@@ -26,3 +26,17 @@ logs
 # SQLite local db files
 prisma/*.db
 prisma/*.db-journal
+
+# Database backups & Dumps
+backups/
+*.dump
+*.bak
+*.sql
+!prisma/*.sql
+!prisma/**/*.sql
+
+# Package archives & Docker exports
+*.tar
+*.tar.gz
+*.tgz
+*.zip

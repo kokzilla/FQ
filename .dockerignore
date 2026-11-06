@@ -8,6 +8,13 @@ node_modules
 .env.local
 dist
 Manual
-deploy-fq.zip
-package-for-ftp.bat
-package-for-ftp.ps1
+backups/
+scripts/
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.dump
+*.sql
+!prisma/*.sql
+!prisma/**/*.sql
