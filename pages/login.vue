@@ -19,7 +19,7 @@
               v-model="username"
               type="text"
               required
-              placeholder="admin หรือ username บุคลากร"
+              placeholder="ระบุชื่อผู้ใช้งาน"
               class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
             />
           </div>
@@ -30,7 +30,7 @@
               v-model="password"
               type="password"
               required
-              placeholder="รหัสผ่าน SSO หรือ admin"
+              placeholder="ระบุรหัสผ่าน"
               class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
             />
           </div>
@@ -48,12 +48,6 @@
             <span v-else>เข้าสู่ระบบ</span>
           </button>
         </form>
-
-        <div class="pt-2 border-t border-slate-100 text-center">
-          <p class="text-[11px] text-slate-400">
-            💡 สำหรับการทดสอบในเครื่อง: เข้าสู่ระบบ Admin ด้วย username: <code class="text-indigo-600 font-mono font-semibold">admin</code> / รหัสผ่าน: <code class="text-indigo-600 font-mono font-semibold">admin</code>
-          </p>
-        </div>
       </div>
     </div>
   </div>
@@ -63,8 +57,8 @@
 import { ref } from 'vue'
 
 const route = useRoute()
-const username = ref('admin')
-const password = ref('admin')
+const username = ref('')
+const password = ref('')
 const isLoading = ref(false)
 const errorMsg = ref('')
 

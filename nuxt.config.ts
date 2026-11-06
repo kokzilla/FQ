@@ -32,6 +32,7 @@ export default defineNuxtConfig({
     bruSsoBaseUrl: process.env.BRU_SSO_BASE_URL || 'https://sso.bru.ac.th',
     bruSsoApiKey: process.env.BRU_SSO_API_KEY || '',
     jwtSecret: process.env.JWT_SECRET || 'bru-facility-evaluation-secret-key-2026',
+    adminPassword: process.env.ADMIN_PASSWORD || 'admin',
     public: {
       appName: 'BRU Facility Evaluation'
     }

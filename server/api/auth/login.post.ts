@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
 
   // 2. โหมด Local Admin หรือ Fallback (เฉพาะกรณีไม่ได้ตั้ง BRU_SSO_API_KEY หรือล็อกอินด้วยบัญชี admin)
   if (!userData) {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin'
+    const adminPassword = (config.adminPassword as string) || process.env.ADMIN_PASSWORD || 'admin'
     const isLocalAdmin = cleanUsername === 'admin' && password === adminPassword
     const isDevFallback = !config.bruSsoApiKey && (password === 'bru123' || password === 'admin')
 
