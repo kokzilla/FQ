@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-slate-50/70 pb-20">
     <Navbar />
 
-    <main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <main class="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <!-- Admin Header -->
       <div class="flex items-center justify-between">
         <div>
@@ -56,71 +56,101 @@
         </div>
       </section>
 
-      <!-- Admin Navigation Tabs -->
-      <div class="flex items-center space-x-1.5 border-b border-slate-200/80 pb-2 overflow-x-auto no-scrollbar">
-        <button
-          type="button"
-          @click="adminTab = 'rounds'"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
-          :class="adminTab === 'rounds' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
-        >
-          🗓️ 1. รอบการประเมิน
-        </button>
+      <!-- Admin Navigation Tabs (Multi-row Grid: 4 columns on desktop, 2 columns on mobile) -->
+      <nav aria-label="เมนูหลักผู้ดูแลระบบ" class="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <!-- Item 1: รอบการประเมิน -->
+          <button
+            type="button"
+            @click="adminTab = 'rounds'"
+            class="px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-left cursor-pointer"
+            :class="adminTab === 'rounds'
+              ? 'bg-indigo-600 text-white shadow-xs font-bold ring-2 ring-indigo-500/20'
+              : 'bg-slate-50/80 hover:bg-slate-100 text-slate-700 border border-slate-200/70 hover:border-slate-300'"
+          >
+            <span class="text-base shrink-0">🗓️</span>
+            <span class="truncate">1. รอบการประเมิน</span>
+          </button>
 
-        <button
-          type="button"
-          @click="adminTab = 'sso'"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
-          :class="adminTab === 'sso' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
-        >
-          👥 2. สิทธิ์กรรมการและผู้ดูแลระบบ
-        </button>
+          <!-- Item 2: สิทธิ์กรรมการและผู้ดูแลระบบ -->
+          <button
+            type="button"
+            @click="adminTab = 'sso'"
+            class="px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-left cursor-pointer"
+            :class="adminTab === 'sso'
+              ? 'bg-indigo-600 text-white shadow-xs font-bold ring-2 ring-indigo-500/20'
+              : 'bg-slate-50/80 hover:bg-slate-100 text-slate-700 border border-slate-200/70 hover:border-slate-300'"
+          >
+            <span class="text-base shrink-0">👥</span>
+            <span class="truncate">2. สิทธิ์กรรมการและผู้ดูแล</span>
+          </button>
 
-        <button
-          type="button"
-          @click="adminTab = 'buildings'"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
-          :class="adminTab === 'buildings' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
-        >
-          🏢 3. จัดการอาคารและผู้รับผิดชอบ
-        </button>
+          <!-- Item 3: จัดการอาคารและผู้รับผิดชอบ -->
+          <button
+            type="button"
+            @click="adminTab = 'buildings'"
+            class="px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-left cursor-pointer"
+            :class="adminTab === 'buildings'
+              ? 'bg-indigo-600 text-white shadow-xs font-bold ring-2 ring-indigo-500/20'
+              : 'bg-slate-50/80 hover:bg-slate-100 text-slate-700 border border-slate-200/70 hover:border-slate-300'"
+          >
+            <span class="text-base shrink-0">🏢</span>
+            <span class="truncate">3. อาคารและผู้รับผิดชอบ</span>
+          </button>
 
-        <button
-          type="button"
-          @click="adminTab = 'questions'"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
-          :class="adminTab === 'questions' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
-        >
-          📝 4. จัดการข้อคำถามในหมวด
-        </button>
+          <!-- Item 4: จัดการข้อคำถามในหมวด -->
+          <button
+            type="button"
+            @click="adminTab = 'questions'"
+            class="px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-left cursor-pointer"
+            :class="adminTab === 'questions'
+              ? 'bg-indigo-600 text-white shadow-xs font-bold ring-2 ring-indigo-500/20'
+              : 'bg-slate-50/80 hover:bg-slate-100 text-slate-700 border border-slate-200/70 hover:border-slate-300'"
+          >
+            <span class="text-base shrink-0">📝</span>
+            <span class="truncate">4. ข้อคำถามในหมวด</span>
+          </button>
 
-        <button
-          type="button"
-          @click="adminTab = 'criteria-building'"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
-          :class="adminTab === 'criteria-building' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
-        >
-          🎨 5. เกณฑ์สีสำหรับอาคาร
-        </button>
+          <!-- Item 5: เกณฑ์สีสำหรับอาคาร -->
+          <button
+            type="button"
+            @click="adminTab = 'criteria-building'"
+            class="px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-left cursor-pointer"
+            :class="adminTab === 'criteria-building'
+              ? 'bg-indigo-600 text-white shadow-xs font-bold ring-2 ring-indigo-500/20'
+              : 'bg-slate-50/80 hover:bg-slate-100 text-slate-700 border border-slate-200/70 hover:border-slate-300'"
+          >
+            <span class="text-base shrink-0">🎨</span>
+            <span class="truncate">5. เกณฑ์สีสำหรับอาคาร</span>
+          </button>
 
-        <button
-          type="button"
-          @click="adminTab = 'criteria-staff'"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
-          :class="adminTab === 'criteria-staff' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
-        >
-          👤 6. เกณฑ์สีสำหรับบุคลากร
-        </button>
+          <!-- Item 6: เกณฑ์สีสำหรับบุคลากร -->
+          <button
+            type="button"
+            @click="adminTab = 'criteria-staff'"
+            class="px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-left cursor-pointer"
+            :class="adminTab === 'criteria-staff'
+              ? 'bg-indigo-600 text-white shadow-xs font-bold ring-2 ring-indigo-500/20'
+              : 'bg-slate-50/80 hover:bg-slate-100 text-slate-700 border border-slate-200/70 hover:border-slate-300'"
+          >
+            <span class="text-base shrink-0">👤</span>
+            <span class="truncate">6. เกณฑ์สีสำหรับบุคลากร</span>
+          </button>
 
-        <button
-          type="button"
-          @click="adminTab = 'reports'"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
-          :class="adminTab === 'reports' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
-        >
-          📊 7. รายงานการประเมิน
-        </button>
-      </div>
+          <!-- Item 7: รายงานการประเมิน (span 2 คอลัมน์เพื่อจัดแถวล่างให้เต็มและเด่นชัด) -->
+          <button
+            type="button"
+            @click="adminTab = 'reports'"
+            class="col-span-2 md:col-span-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-left cursor-pointer"
+            :class="adminTab === 'reports'
+              ? 'bg-indigo-600 text-white shadow-xs font-bold ring-2 ring-indigo-500/20'
+              : 'bg-slate-50/80 hover:bg-slate-100 text-slate-700 border border-slate-200/70 hover:border-slate-300'"
+          >
+            <span class="text-base shrink-0">📊</span>
+            <span class="truncate">7. รายงานการประเมิน</span>
+          </button>
+        </div>
+      </nav>
 
       <!-- TAB 1: Evaluation Rounds Management -->
       <section v-if="adminTab === 'rounds'" class="space-y-4">
