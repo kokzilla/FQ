@@ -14,6 +14,48 @@
         </div>
       </div>
 
+      <!-- Quick Evaluator Impersonation Card -->
+      <section class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-md border border-indigo-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center space-x-2">
+            <span class="text-xl">🎭</span>
+            <h3 class="font-bold text-sm sm:text-base text-white">สวมบทบาทเป็นผู้ประเมิน (Impersonate Evaluator)</h3>
+            <span class="bg-amber-400/20 text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-amber-400/30">
+              ดูหน้าจอผู้ประเมิน
+            </span>
+          </div>
+          <p class="text-xs text-indigo-200">
+            เลือกรายชื่อผู้ประเมินเพื่อสวมบทบาท ดูหน้าจอและมุมมองการตรวจประเมินเสมือนเป็นกรรมการท่านนั้นจริง
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <select
+            v-model="selectedImpersonateUserId"
+            class="text-xs bg-slate-800/90 text-white border border-indigo-400/40 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-400 outline-none max-w-full sm:max-w-[260px] font-medium"
+          >
+            <option value="" disabled>-- เลือกรายชื่อผู้ประเมิน --</option>
+            <option v-for="aud in evaluatorList" :key="aud.id" :value="aud.id">
+              {{ aud.fullName }} ({{ aud.positionName || formatRoleTitle(aud.role) }})
+            </option>
+            <option v-if="evaluatorList.length === 0" value="__DEMO__">
+              👤 กรรมการตรวจประเมิน (บัญชีทดสอบ)
+            </option>
+          </select>
+
+          <button
+            type="button"
+            @click="impersonateUser(selectedImpersonateUserId, '/evaluate')"
+            :disabled="isImpersonatingAction"
+            class="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
+          >
+            <span v-if="!isImpersonatingAction">🚀</span>
+            <span v-else class="w-3 h-3 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></span>
+            <span>สวมบทบาท (ไปหน้าประเมิน)</span>
+          </button>
+        </div>
+      </section>
+
       <!-- Admin Navigation Tabs -->
       <div class="flex items-center space-x-1.5 border-b border-slate-200/80 pb-2 overflow-x-auto no-scrollbar">
         <button
@@ -68,6 +110,15 @@
           :class="adminTab === 'criteria-staff' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
         >
           👤 6. เกณฑ์สีสำหรับบุคลากร
+        </button>
+
+        <button
+          type="button"
+          @click="adminTab = 'reports'"
+          class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
+          :class="adminTab === 'reports' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+        >
+          📊 7. รายงานการประเมิน
         </button>
       </div>
 
@@ -312,6 +363,18 @@
 
               <!-- Role Selector & Revoke Button -->
               <div class="flex items-center space-x-2 flex-shrink-0">
+                <!-- Impersonate Button -->
+                <button
+                  type="button"
+                  @click="impersonateUser(u, '/evaluate')"
+                  :disabled="isImpersonatingAction"
+                  class="px-2.5 py-1.5 text-xs font-semibold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-lg transition-all flex items-center space-x-1 shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
+                  title="สวมบทบาทเป็นบุคลากรท่านนี้ เพื่อดูหน้าจอและมุมมองการประเมิน"
+                >
+                  <span>🎭</span>
+                  <span>สวมบทบาท</span>
+                </button>
+
                 <select
                   :value="u.role"
                   @change="changeUserRole(u, ($event.target as HTMLSelectElement).value)"
@@ -847,6 +910,194 @@
               </button>
             </div>
           </form>
+        </div>
+      </section>
+
+      <!-- TAB 7: Evaluation Reports -->
+      <section v-else-if="adminTab === 'reports'" class="space-y-4">
+        <!-- Header & Action Card -->
+        <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+              <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold mb-1">
+                <span>📊 รายงานสรุปผลการประเมิน</span>
+              </div>
+              <h3 class="text-base sm:text-lg font-bold text-slate-900">รายงานการตรวจประเมินรายรายการ</h3>
+              <p class="text-xs text-slate-500">แสดงรายการผลการตรวจประเมิน วันที่ประเมิน ผู้ประเมิน ผู้ถูกประเมิน อาคารที่รับผิดชอบ และคะแนนเฉลี่ย</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                @click="exportEvaluationsExcel"
+                :disabled="filteredReportAssessments.length === 0"
+                class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-sm transition-all flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
+              >
+                <span>📥</span>
+                <span>ส่งออก Excel (.xlsx)</span>
+              </button>
+
+              <button
+                type="button"
+                @click="fetchReportAssessments"
+                :disabled="isLoadingReports"
+                class="px-3 py-2 rounded-xl text-xs font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-xs flex items-center space-x-1 cursor-pointer disabled:opacity-50"
+              >
+                <span :class="isLoadingReports ? 'animate-spin' : ''">🔄</span>
+                <span>รีเฟรช</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filters Bar -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+            <!-- Round Filter -->
+            <div>
+              <label class="block text-[11px] font-medium text-slate-500 mb-1">รอบการประเมิน</label>
+              <select
+                v-model="reportRoundFilter"
+                @change="fetchReportAssessments"
+                class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              >
+                <option value="">ทุกรอบการประเมิน</option>
+                <option v-for="r in rounds" :key="r.id" :value="r.id">
+                  {{ r.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Building Filter -->
+            <div>
+              <label class="block text-[11px] font-medium text-slate-500 mb-1">อาคาร</label>
+              <select
+                v-model="reportBuildingFilter"
+                class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              >
+                <option value="">ทุกอาคาร ({{ buildings.length }} อาคาร)</option>
+                <option v-for="b in buildings" :key="b.id" :value="b.name">
+                  {{ b.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Search Query -->
+            <div class="sm:col-span-2">
+              <label class="block text-[11px] font-medium text-slate-500 mb-1">ค้นหา (ชื่อผู้ประเมิน / ผู้ถูกประเมิน / อาคาร)</label>
+              <div class="relative">
+                <input
+                  v-model="reportSearchQuery"
+                  type="text"
+                  placeholder="พิมพ์ค้นหาชื่อผู้ประเมิน, ผู้ถูกประเมิน หรืออาคาร..."
+                  class="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
+                <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+                <button
+                  v-if="reportSearchQuery"
+                  @click="reportSearchQuery = ''"
+                  class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-bar: Name display toggle & Count summary -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs text-slate-600">
+            <div class="flex items-center space-x-2">
+              <span class="text-slate-400">แสดงผล:</span>
+              <span class="font-bold text-slate-900">{{ filteredReportAssessments.length }}</span>
+              <span>รายการ</span>
+              <span v-if="filteredReportAssessments.length > 0" class="text-slate-400">
+                (คะแนนเฉลี่ยรวม: <strong class="text-indigo-600 font-bold">{{ reportOverallAverage.toFixed(2) }}</strong> / 5.00)
+              </span>
+            </div>
+
+            <!-- Name format selector -->
+            <div class="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl text-[11px]">
+              <span class="text-slate-500 px-1.5 font-medium">รูปแบบชื่อ:</span>
+              <button
+                type="button"
+                @click="nameDisplayMode = 'FIRST_ONLY'"
+                class="px-2.5 py-0.5 rounded-lg font-medium transition-all"
+                :class="nameDisplayMode === 'FIRST_ONLY' ? 'bg-white text-indigo-700 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
+              >
+                เฉพาะชื่อ (First Name)
+              </button>
+              <button
+                type="button"
+                @click="nameDisplayMode = 'FULL_WITHOUT_PREFIX'"
+                class="px-2.5 py-0.5 rounded-lg font-medium transition-all"
+                :class="nameDisplayMode === 'FULL_WITHOUT_PREFIX' ? 'bg-white text-indigo-700 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
+              >
+                ชื่อ-นามสกุล (ไม่เอาคำนำหน้า)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/80 text-slate-600 font-semibold">
+                  <th class="py-3 px-4 w-12 text-center text-slate-400">#</th>
+                  <th class="py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-slate-100/60" @click="toggleReportSort('date')">
+                    <div class="flex items-center space-x-1">
+                      <span>วันที่ประเมิน</span>
+                      <span class="text-[10px] text-slate-400">{{ reportSortBy.startsWith('date') ? (reportSortBy === 'date_desc' ? '▼' : '▲') : '↕' }}</span>
+                    </div>
+                  </th>
+                  <th class="py-3 px-4 whitespace-nowrap">ผู้ประเมิน (เฉพาะชื่อ)</th>
+                  <th class="py-3 px-4 whitespace-nowrap">ผู้ถูกประเมิน (เฉพาะชื่อ)</th>
+                  <th class="py-3 px-4 whitespace-nowrap">อาคารที่รับผิดชอบ</th>
+                  <th class="py-3 px-4 text-center whitespace-nowrap cursor-pointer hover:bg-slate-100/60" @click="toggleReportSort('score')">
+                    <div class="flex items-center justify-center space-x-1">
+                      <span>คะแนนเฉลี่ย</span>
+                      <span class="text-[10px] text-slate-400">{{ reportSortBy.startsWith('score') ? (reportSortBy === 'score_desc' ? '▼' : '▲') : '↕' }}</span>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-slate-700">
+                <tr
+                  v-for="(item, idx) in filteredReportAssessments"
+                  :key="item.id"
+                  class="hover:bg-slate-50/70 transition-colors"
+                >
+                  <td class="py-3 px-4 text-center text-slate-400 font-mono text-[11px]">{{ idx + 1 }}</td>
+                  <td class="py-3 px-4 whitespace-nowrap font-medium text-slate-800">
+                    {{ formatReportDate(item.assessedAt || item.createdAt) }}
+                  </td>
+                  <td class="py-3 px-4 whitespace-nowrap font-semibold text-slate-900" :title="item.assessor?.fullName || item.assessorName">
+                    👤 {{ formatReportDisplayName(item.assessor?.fullName || item.assessorName) }}
+                  </td>
+                  <td class="py-3 px-4 whitespace-nowrap text-slate-800" :title="item.responsibleStaffText">
+                    🧹 {{ formatReportDisplayName(item.responsibleStaffText) }}
+                  </td>
+                  <td class="py-3 px-4 whitespace-nowrap font-medium text-slate-800">
+                    🏢 {{ item.building?.name || item.buildingName || '-' }}
+                  </td>
+                  <td class="py-3 px-4 text-center whitespace-nowrap">
+                    <span
+                      class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold border shadow-2xs"
+                      :class="getScoreBadgeClass(getAssessmentAverageScore(item))"
+                    >
+                      {{ getAssessmentAverageScore(item).toFixed(2) }}
+                    </span>
+                  </td>
+                </tr>
+
+                <tr v-if="filteredReportAssessments.length === 0">
+                  <td colspan="6" class="py-12 text-center text-slate-400 space-y-1">
+                    <p class="text-base">📋</p>
+                    <p class="text-xs font-medium">ไม่พบข้อมูลผลการตรวจประเมินที่ตรงตามเงื่อนไข</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -1536,8 +1787,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
+import * as XLSX from 'xlsx'
 
-const adminTab = ref<'rounds' | 'sso' | 'buildings' | 'questions' | 'criteria-building' | 'criteria-staff'>('rounds')
+const adminTab = ref<'rounds' | 'sso' | 'buildings' | 'questions' | 'criteria-building' | 'criteria-staff' | 'reports'>('rounds')
 const currentUserSession = useCookie<any>('bru_user_session')
 
 // ========================
@@ -1794,6 +2046,69 @@ function formatRoleTitle(role: string) {
     case 'SUPERVISOR': return 'หัวหน้างาน'
     case 'HOUSEKEEPER': return 'ผู้รับผิดชอบอาคาร'
     default: return role
+  }
+}
+
+// ========================
+// EVALUATOR IMPERSONATION
+// ========================
+const selectedImpersonateUserId = ref('')
+const isImpersonatingAction = ref(false)
+
+const evaluatorList = computed(() => {
+  const auditors = appointedUsers.value.filter(u => u.role === 'AUDITOR')
+  if (auditors.length > 0) return auditors
+  return appointedUsers.value
+})
+
+watch(evaluatorList, (list) => {
+  if (list && list.length > 0 && !selectedImpersonateUserId.value) {
+    selectedImpersonateUserId.value = list[0].id
+  }
+}, { immediate: true })
+
+async function impersonateUser(target: any, redirectPath = '/evaluate') {
+  if (isImpersonatingAction.value) return
+  isImpersonatingAction.value = true
+
+  let userId: string | undefined = undefined
+  let userlogin: string | undefined = undefined
+  let displayName = ''
+
+  if (typeof target === 'string') {
+    if (target === '__DEMO__') {
+      userlogin = 'evaluator_demo'
+      displayName = 'กรรมการตรวจประเมิน (ทดสอบ)'
+    } else {
+      userId = target
+      const found = appointedUsers.value.find(u => u.id === target)
+      displayName = found?.fullName || ''
+    }
+  } else if (target && typeof target === 'object') {
+    userId = target.id
+    userlogin = target.userlogin
+    displayName = target.fullName || ''
+  } else if (!target && evaluatorList.value.length > 0) {
+    userId = evaluatorList.value[0].id
+    displayName = evaluatorList.value[0].fullName
+  }
+
+  try {
+    const res: any = await $fetch('/api/auth/impersonate', {
+      method: 'POST',
+      body: { userId, userlogin }
+    })
+    if (res?.ok) {
+      currentUserSession.value = res.user
+      showToast(res.message || `สวมบทบาทเป็น "${displayName || res.user?.fullName}" เรียบร้อยแล้ว`)
+      setTimeout(() => {
+        navigateTo(redirectPath)
+      }, 500)
+    }
+  } catch (err: any) {
+    showToast(err?.message || 'เกิดข้อผิดพลาดในการสวมบทบาท', 'error')
+  } finally {
+    isImpersonatingAction.value = false
   }
 }
 
@@ -2233,6 +2548,183 @@ async function deleteQuestion(id: number, title: string) {
   } catch (e) {}
 }
 
+// ========================
+// 7. EVALUATION REPORTS
+// ========================
+const reportAssessments = ref<any[]>([])
+const isLoadingReports = ref(false)
+const reportRoundFilter = ref('')
+const reportBuildingFilter = ref('')
+const reportSearchQuery = ref('')
+const reportSortBy = ref<'date_desc' | 'date_asc' | 'score_desc' | 'score_asc'>('date_desc')
+const nameDisplayMode = ref<'FIRST_ONLY' | 'FULL_WITHOUT_PREFIX'>('FIRST_ONLY')
+
+async function fetchReportAssessments() {
+  isLoadingReports.value = true
+  try {
+    const res: any = await $fetch('/api/assessments', {
+      params: {
+        roundId: reportRoundFilter.value || undefined
+      }
+    })
+    if (res?.ok && Array.isArray(res.data)) {
+      reportAssessments.value = res.data
+    } else {
+      reportAssessments.value = []
+    }
+  } catch (err) {
+    console.error('Failed to fetch evaluation report data', err)
+  } finally {
+    isLoadingReports.value = false
+  }
+}
+
+function getAssessmentAverageScore(item: any): number {
+  if (item.totalMaxScore && item.totalMaxScore > 0) {
+    return Number(((item.totalScoreObtained / item.totalMaxScore) * 5).toFixed(2))
+  }
+  if (item.percentage !== undefined && item.percentage !== null) {
+    return Number(((item.percentage / 100) * 5).toFixed(2))
+  }
+  if (Array.isArray(item.scores) && item.scores.length > 0) {
+    const valid = item.scores.filter((s: any) => !s.isNA && s.score !== null && s.score !== undefined)
+    if (valid.length > 0) {
+      const sum = valid.reduce((acc: number, curr: any) => acc + Number(curr.score), 0)
+      return Number((sum / valid.length).toFixed(2))
+    }
+  }
+  return 0
+}
+
+function cleanThaiPrefixes(name?: string): string {
+  if (!name) return ''
+  let str = String(name).trim()
+  const prefixRegex = /^(?:ว่าที่\s*ร้อยตรี|ว่าที่\s*ร\.ต\.|ผศ\.\s*ดร\.|รศ\.\s*ดร\.|ศ\.\s*ดร\.|อาจารย์\s*ดร\.|อาจารย์\s*|ผศ\.|รศ\.|ศ\.|ดร\.|อ\.|นาย|นางสาว|นาง|น\.ส\.)\s*/i
+  let prev = ''
+  while (prev !== str) {
+    prev = str
+    str = str.replace(prefixRegex, '').trim()
+  }
+  return str
+}
+
+function extractFirstNameOnly(name?: string): string {
+  if (!name) return '-'
+  const cleaned = cleanThaiPrefixes(name)
+  if (!cleaned) return name
+  const parts = cleaned.split(/\s+/)
+  return parts[0] || cleaned
+}
+
+function extractNameWithoutPrefix(name?: string): string {
+  if (!name) return '-'
+  const cleaned = cleanThaiPrefixes(name)
+  return cleaned || name
+}
+
+function formatReportDisplayName(name?: string): string {
+  if (nameDisplayMode.value === 'FIRST_ONLY') {
+    return extractFirstNameOnly(name)
+  }
+  return extractNameWithoutPrefix(name)
+}
+
+function formatReportDate(dateStr?: string | Date): string {
+  if (!dateStr) return '-'
+  try {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return String(dateStr)
+    return d.toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  } catch {
+    return String(dateStr)
+  }
+}
+
+function getScoreBadgeClass(score: number): string {
+  if (score >= (buildingCriteria.greenMin || 4.0)) {
+    return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+  }
+  if (score >= (buildingCriteria.yellowMin || 2.0)) {
+    return 'bg-amber-50 text-amber-700 border-amber-200'
+  }
+  return 'bg-rose-50 text-rose-700 border-rose-200'
+}
+
+function toggleReportSort(col: 'date' | 'score') {
+  if (col === 'date') {
+    reportSortBy.value = reportSortBy.value === 'date_desc' ? 'date_asc' : 'date_desc'
+  } else if (col === 'score') {
+    reportSortBy.value = reportSortBy.value === 'score_desc' ? 'score_asc' : 'score_desc'
+  }
+}
+
+const filteredReportAssessments = computed(() => {
+  let list = [...reportAssessments.value]
+
+  if (reportBuildingFilter.value) {
+    const bName = reportBuildingFilter.value.trim().toLowerCase()
+    list = list.filter(item => {
+      const currentB = (item.building?.name || item.buildingName || '').toLowerCase()
+      return currentB.includes(bName)
+    })
+  }
+
+  if (reportSearchQuery.value.trim()) {
+    const q = reportSearchQuery.value.trim().toLowerCase()
+    list = list.filter(item => {
+      const assessor = (item.assessor?.fullName || item.assessorName || '').toLowerCase()
+      const staff = (item.responsibleStaffText || '').toLowerCase()
+      const bName = (item.building?.name || item.buildingName || '').toLowerCase()
+      return assessor.includes(q) || staff.includes(q) || bName.includes(q)
+    })
+  }
+
+  if (reportSortBy.value === 'date_desc') {
+    list.sort((a, b) => new Date(b.assessedAt || b.createdAt).getTime() - new Date(a.assessedAt || a.createdAt).getTime())
+  } else if (reportSortBy.value === 'date_asc') {
+    list.sort((a, b) => new Date(a.assessedAt || a.createdAt).getTime() - new Date(b.assessedAt || b.createdAt).getTime())
+  } else if (reportSortBy.value === 'score_desc') {
+    list.sort((a, b) => getAssessmentAverageScore(b) - getAssessmentAverageScore(a))
+  } else if (reportSortBy.value === 'score_asc') {
+    list.sort((a, b) => getAssessmentAverageScore(a) - getAssessmentAverageScore(b))
+  }
+
+  return list
+})
+
+const reportOverallAverage = computed(() => {
+  if (filteredReportAssessments.value.length === 0) return 0
+  const sum = filteredReportAssessments.value.reduce((acc, item) => acc + getAssessmentAverageScore(item), 0)
+  return sum / filteredReportAssessments.value.length
+})
+
+function exportEvaluationsExcel() {
+  if (filteredReportAssessments.value.length === 0) return
+  const rows = filteredReportAssessments.value.map((item, index) => ({
+    'ลำดับ': index + 1,
+    'วันที่ประเมิน': formatReportDate(item.assessedAt || item.createdAt),
+    'ผู้ประเมิน (เฉพาะชื่อ)': formatReportDisplayName(item.assessor?.fullName || item.assessorName),
+    'ผู้ถูกประเมิน (เฉพาะชื่อ)': formatReportDisplayName(item.responsibleStaffText),
+    'อาคารที่รับผิดชอบ': item.building?.name || item.buildingName || '-',
+    'คะแนนเฉลี่ย': getAssessmentAverageScore(item).toFixed(2)
+  }))
+
+  const worksheet = XLSX.utils.json_to_sheet(rows)
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'รายงานการประเมิน')
+  XLSX.writeFile(workbook, `รายงานการประเมิน_${new Date().toISOString().split('T')[0]}.xlsx`)
+}
+
+watch(adminTab, (tab) => {
+  if (tab === 'reports' && reportAssessments.value.length === 0) {
+    fetchReportAssessments()
+  }
+})
+
 onMounted(() => {
   fetchRounds()
   fetchUsers()
@@ -2241,6 +2733,7 @@ onMounted(() => {
   fetchQuestions()
   searchSsoUsers()
   fetchColorCriteria()
+  fetchReportAssessments()
 })
 </script>
 

@@ -5,6 +5,13 @@ export interface SessionUser {
   userlogin: string
   fullName: string
   role: string
+  positionName?: string
+  impersonator?: {
+    id: string
+    userlogin: string
+    fullName: string
+    role: string
+  }
   sig?: string
 }
 
@@ -29,6 +36,8 @@ export function createSignedSession(user: Omit<SessionUser, 'sig'>): SessionUser
     userlogin: user.userlogin,
     fullName: user.fullName,
     role: user.role,
+    positionName: user.positionName,
+    impersonator: user.impersonator,
     sig: signSessionPayload(user)
   }
 }

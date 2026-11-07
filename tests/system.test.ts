@@ -164,4 +164,73 @@ describe('3. Integration & Data Layer Tests (IT-02 to IT-07)', () => {
     // คืนค่าเดิมหลังทดสอบ
     await saveColorCriteriaSettings(DEFAULT_COLOR_CRITERIA.building, DEFAULT_COLOR_CRITERIA.staff)
   })
+
+  it('IT-08: Admin Evaluator Impersonation & Restore Integrity (การสวมบทบาทผู้ประเมินและการสลับกลับสู่ Admin)', () => {
+    // 1. จำลองผู้ดูแลระบบ Admin
+    const adminSession = createSignedSession({
+      id: 'admin-01',
+      userlogin: 'admin',
+      fullName: 'ผู้ดูแลระบบ อาคารสถานที่',
+      role: 'ADMIN'
+    })
+    assert.equal(verifySignedSession(adminSession), true)
+    assert.equal(adminSession.role, 'ADMIN')
+
+    // 2. Admin สวมบทบาทเป็นผู้ประเมิน (AUDITOR)
+    const impersonatedSession = createSignedSession({
+      id: 'auditor-88',
+      userlogin: 'somchai_auditor',
+      fullName: 'ดร.สมชาย ใจมั่น',
+      role: 'AUDITOR',
+      positionName: 'กรรมการผู้ทรงคุณวุฒิ',
+      impersonator: {
+        id: adminSession.id,
+        userlogin: adminSession.userlogin,
+        fullName: adminSession.fullName,
+        role: 'ADMIN'
+      }
+    })
+
+    // ลายเซ็นต้องผ่าน และบทบาทต้องเป็น AUDITOR เพื่อให้หน้าจอแสดงผลในมุมมองผู้ประเมิน
+    assert.equal(verifySignedSession(impersonatedSession), true)
+    assert.equal(impersonatedSession.role, 'AUDITOR')
+    assert.equal(impersonatedSession.impersonator?.userlogin, 'admin')
+
+    // 3. สลับกลับสู่บทบาท Admin (Restore)
+    const restoredAdminSession = createSignedSession({
+      id: impersonatedSession.impersonator!.id,
+      userlogin: impersonatedSession.impersonator!.userlogin,
+      fullName: impersonatedSession.impersonator!.fullName,
+      role: 'ADMIN'
+    })
+
+    assert.equal(verifySignedSession(restoredAdminSession), true)
+    assert.equal(restoredAdminSession.role, 'ADMIN')
+    assert.equal(restoredAdminSession.userlogin, 'admin')
+  })
+
+  it('UT-05: Thai Name & Academic Title Stripping (การตัดคำนำหน้าชื่อซ้อน เช่น อาจารย์ ดร.)', () => {
+    function cleanThaiPrefixes(name?: string): string {
+      if (!name) return ''
+      let str = String(name).trim()
+      const prefixRegex = /^(?:ว่าที่\s*ร้อยตรี|ว่าที่\s*ร\.ต\.|ผศ\.\s*ดร\.|รศ\.\s*ดร\.|ศ\.\s*ดร\.|อาจารย์\s*ดร\.|อาจารย์\s*|ผศ\.|รศ\.|ศ\.|ดร\.|อ\.|นาย|นางสาว|นาง|น\.ส\.)\s*/i
+      let prev = ''
+      while (prev !== str) {
+        prev = str
+        str = str.replace(prefixRegex, '').trim()
+      }
+      return str
+    }
+    function extractFirstName(name?: string): string {
+      const cleaned = cleanThaiPrefixes(name)
+      return cleaned.split(/\s+/)[0] || cleaned
+    }
+
+    assert.equal(extractFirstName('อาจารย์ ดร. ชาติวุฒิ ธนาจิรันธร'), 'ชาติวุฒิ')
+    assert.equal(cleanThaiPrefixes('อาจารย์ ดร. ชาติวุฒิ ธนาจิรันธร'), 'ชาติวุฒิ ธนาจิรันธร')
+    assert.equal(extractFirstName('นาย สุรชัย ตามกลาง'), 'สุรชัย')
+    assert.equal(extractFirstName('ดร.สมชาย ใจมั่น'), 'สมชาย')
+    assert.equal(extractFirstName('ผศ. ดร. วิชัย สว่างวงศ์'), 'วิชัย')
+    assert.equal(extractFirstName('พัชรา พะสุรัมย์'), 'พัชรา')
+  })
 })

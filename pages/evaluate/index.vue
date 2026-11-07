@@ -577,7 +577,14 @@ function setPhotoUrl(qId: number, url: string) {
 // Helpers
 function formatStaffDisplayName(fullName: string): string {
   if (!fullName) return ''
-  return fullName.replace(/^(?:นาย|นางสาว|นาง|น\.ส\.|ว่าที่\s*ร\.ต\.|อาจารย์|ดร\.|ผศ\.\s*ดร\.|ผศ\.|รศ\.\s*ดร\.|รศ\.|ศ\.)\s*/g, '').trim()
+  let str = String(fullName).trim()
+  const prefixRegex = /^(?:ว่าที่\s*ร้อยตรี|ว่าที่\s*ร\.ต\.|ผศ\.\s*ดร\.|รศ\.\s*ดร\.|ศ\.\s*ดร\.|อาจารย์\s*ดร\.|อาจารย์\s*|ผศ\.|รศ\.|ศ\.|ดร\.|อ\.|นาย|นางสาว|นาง|น\.ส\.)\s*/i
+  let prev = ''
+  while (prev !== str) {
+    prev = str
+    str = str.replace(prefixRegex, '').trim()
+  }
+  return str
 }
 
 const currentBuildingStaffs = computed(() => {

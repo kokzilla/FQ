@@ -29,6 +29,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@vite-pwa/nuxt": "^1.1.1",
     "prisma": "^6.19.3",
     "tsx": "^4.23.15"
   }

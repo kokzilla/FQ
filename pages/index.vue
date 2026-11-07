@@ -3,14 +3,11 @@
     <Navbar />
 
     <main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
-      <!-- Welcome Hero Banner (Updated with Latest Round & without action buttons) -->
-      <div class="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-7 text-white shadow-md relative overflow-hidden">
-        <div class="relative z-10 space-y-2.5">
-          <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-white/10 text-indigo-200 border border-white/10">
-            ระบบติดตามและประเมินผลอาคาร
-          </span>
-          <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
-            ประเมินผลการปฏิบัติงานบุคลากรประจำอาคาร
+      <!-- Welcome Hero Banner (Compact 2-line version) -->
+      <div class="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-2xl p-4 sm:p-5 text-white shadow-md relative overflow-hidden">
+        <div class="relative z-10 space-y-1 sm:space-y-1.5">
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight">
+            Dashboard
           </h2>
           <!-- Subtitle with the active/latest evaluation round name -->
           <div class="flex items-center space-x-2 text-xs sm:text-sm text-indigo-200">
@@ -24,47 +21,71 @@
         </div>
       </div>
 
-      <!-- Quick Metrics Summary (5 Grid Columns) -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <!-- Quick Metrics Summary (6 Grid Columns) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <!-- Grid 1: อาคารที่ตรวจแล้ว / อาคารทั้งหมด -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-          <span class="text-xs text-slate-500 font-medium">อาคารที่ตรวจแล้ว</span>
-          <p class="text-2xl font-bold text-slate-900 mt-1">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
+          <p class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-none text-center">
             {{ evaluatedBuildingsCount }}/{{ totalBuildingsCount }}
-            <span class="text-xs font-normal text-slate-400">อาคาร</span>
           </p>
+          <span class="text-xs text-slate-500 font-medium mt-1.5 leading-snug text-center">อาคารที่ตรวจแล้ว</span>
         </div>
 
-        <!-- Grid 2: คะแนนเฉลี่ยรวม -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-          <span class="text-xs text-slate-500 font-medium">คะแนนเฉลี่ยรวม</span>
-          <p class="text-2xl font-bold text-indigo-600 mt-1">
-            {{ averageScore }} <span class="text-xs font-normal text-slate-400">/ 5.00</span>
+        <!-- Grid 2: บุคลากรที่ประเมินแล้ว / บุคลากรทั้งหมด -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
+          <p class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-none text-center">
+            {{ evaluatedStaffCount }}/{{ totalStaffCount }}
           </p>
+          <span class="text-xs text-slate-500 font-medium mt-1.5 leading-snug text-center">บุคลากรที่ประเมินแล้ว</span>
         </div>
 
-        <!-- Grid 3: ระดับสีเขียว -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-          <span class="text-xs text-emerald-600 font-medium">ระดับสีเขียว (≥ {{ colorCriteria.building.greenMin }})</span>
-          <p class="text-2xl font-bold text-emerald-600 mt-1">
-            {{ greenBuildingCount }} <span class="text-xs font-normal text-slate-400">อาคาร</span>
+        <!-- Grid 3: คะแนนเฉลี่ยรวม -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
+          <p class="text-2xl sm:text-3xl font-extrabold text-indigo-600 tracking-tight leading-none text-center">
+            {{ averageScore }} <span class="text-xs font-medium text-slate-400">/ 5.00</span>
           </p>
+          <span class="text-xs text-slate-500 font-medium mt-1.5 leading-snug text-center">คะแนนเฉลี่ยรวม</span>
         </div>
 
-        <!-- Grid 4: ระดับสีเหลือง แทรกระหว่างเขียวกับแดง -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-          <span class="text-xs text-amber-500 font-medium">ระดับสีเหลือง ({{ colorCriteria.building.yellowMin }} - &lt; {{ colorCriteria.building.greenMin }})</span>
-          <p class="text-2xl font-bold text-amber-500 mt-1">
-            {{ yellowBuildingCount }} <span class="text-xs font-normal text-slate-400">อาคาร</span>
+        <!-- Grid 4: ระดับสีเขียว -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
+          <p class="text-2xl sm:text-3xl font-extrabold text-emerald-600 tracking-tight leading-none text-center">
+            {{ greenBuildingCount }}
           </p>
+          <span class="text-xs text-emerald-700 font-medium mt-1.5 leading-snug text-center">ระดับสีเขียว</span>
         </div>
 
-        <!-- Grid 5: ระดับสีแดง -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm col-span-2 sm:col-span-1">
-          <span class="text-xs text-rose-500 font-medium">ระดับสีแดง (&lt; {{ colorCriteria.building.yellowMin }})</span>
-          <p class="text-2xl font-bold text-rose-600 mt-1">
-            {{ redBuildingCount }} <span class="text-xs font-normal text-slate-400">อาคาร</span>
+        <!-- Grid 5: ระดับสีเหลือง แทรกระหว่างเขียวกับแดง -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
+          <p class="text-2xl sm:text-3xl font-extrabold text-amber-500 tracking-tight leading-none text-center">
+            {{ yellowBuildingCount }}
           </p>
+          <span class="text-xs text-amber-700 font-medium mt-1.5 leading-snug text-center">ระดับสีเหลือง</span>
+        </div>
+
+        <!-- Grid 6: ระดับสีแดง -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
+          <p class="text-2xl sm:text-3xl font-extrabold text-rose-600 tracking-tight leading-none text-center">
+            {{ redBuildingCount }}
+          </p>
+          <span class="text-xs text-rose-700 font-medium mt-1.5 leading-snug text-center">ระดับสีแดง</span>
+        </div>
+      </div>
+
+      <!-- Assessor Statistics Bar (สถิติของผู้ประเมิน) -->
+      <div class="bg-indigo-50/70 border border-indigo-100/90 rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-2.5 text-xs sm:text-sm shadow-xs">
+        <div class="flex items-center space-x-2 text-slate-800">
+          <span class="text-base">📋</span>
+          <span class="font-semibold text-slate-900">สถิติการตรวจของคุณ {{ userSession?.fullName || 'ผู้ตรวจประเมิน' }}:</span>
+        </div>
+        <div class="flex items-center space-x-3 sm:space-x-4 text-slate-700">
+          <div>
+            อาคารที่ตรวจแล้ว: <span class="font-bold text-indigo-700 text-sm sm:text-base">{{ myEvaluatedBuildingsCount }}</span> <span class="text-slate-500 text-xs">อาคาร</span>
+          </div>
+          <span class="text-slate-300">•</span>
+          <div>
+            บุคลากรที่ประเมินแล้ว: <span class="font-bold text-indigo-700 text-sm sm:text-base">{{ myEvaluatedStaffCount }}</span> <span class="text-slate-500 text-xs">คน</span>
+          </div>
         </div>
       </div>
 
@@ -214,6 +235,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+
+const userSession = useCookie<any>('bru_user_session')
 
 const assessments = ref<any[]>([])
 const rounds = ref<any[]>([])
@@ -425,6 +448,65 @@ const staffPerformanceList = computed(() => {
       pctStr: (avg * 20).toFixed(1)
     }
   })
+})
+
+const evaluatedStaffCount = computed(() => {
+  return staffPerformanceList.value.length
+})
+
+const totalStaffCount = computed(() => {
+  const staffSet = new Set<string>()
+  for (const b of buildings.value) {
+    if (b.staffs && Array.isArray(b.staffs)) {
+      for (const s of b.staffs) {
+        if (s.staffName && s.staffName.trim()) {
+          staffSet.add(`${b.name || b.id}___${s.staffName.trim()}`)
+        }
+      }
+    }
+  }
+  for (const item of staffPerformanceList.value) {
+    staffSet.add(`${item.buildingName}___${item.staffName}`)
+  }
+  return Math.max(staffSet.size, evaluatedStaffCount.value)
+})
+
+// Current logged-in assessor statistics
+const myEvaluations = computed(() => {
+  if (!userSession.value) return []
+  const sessionUser = userSession.value
+  const sId = sessionUser.id
+  const sLogin = sessionUser.userlogin
+  const sName = sessionUser.fullName?.trim()
+
+  return latestRoundAssessments.value.filter(a => {
+    if (sId && a.assessorId === sId) return true
+    if (sLogin && (a.assessor?.userlogin === sLogin || a.assessorId === sLogin)) return true
+    const aName = (a.assessorName || a.assessor?.fullName || '').trim()
+    if (sName && aName && (aName === sName || aName.includes(sName) || sName.includes(aName))) return true
+    return false
+  })
+})
+
+const myEvaluatedBuildingsCount = computed(() => {
+  const bSet = new Set<string>()
+  for (const a of myEvaluations.value) {
+    const bId = a.buildingId || a.buildingName || a.building?.name
+    if (bId) bSet.add(bId)
+  }
+  return bSet.size
+})
+
+const myEvaluatedStaffCount = computed(() => {
+  const sSet = new Set<string>()
+  for (const a of myEvaluations.value) {
+    const bName = (a.buildingName || a.building?.name || '').trim()
+    const sName = (a.responsibleStaffText || '').trim()
+    if (sName) {
+      sSet.add(`${bName}___${sName}`)
+    }
+  }
+  return sSet.size
 })
 
 const topThreePersonnel = computed(() => {

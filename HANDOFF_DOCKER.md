@@ -1,7 +1,7 @@
 # 📋 เอกสารส่งต่องาน (Handoff Document)
 ### โครงการ: ระบบประเมินผลการปฏิบัติงานบุคลากรประจำอาคาร (BRU Facility Evaluation)
 **วันที่บันทึก:** 5 พฤศจิกายน 2569  
-**โฟลเดอร์โปรเจกต์:** `d:\Project\FQ`
+**โฟลเดอร์โปรเจกต์:** `d:\git\FQ`
 
 ---
 
@@ -27,7 +27,7 @@
 ### ขั้นตอนที่ 2: สั่ง Build Image ในเครื่องที่บ้าน
 เปิด Terminal / PowerShell / Command Prompt แล้วเข้าไปที่โฟลเดอร์โปรเจกต์:
 ```bash
-cd D:\Project\FQ
+cd D:\git\FQ
 docker build -t bru-fq-app:latest .
 ```
 *(ระบบจะทำการดาวน์โหลด Node 20 Alpine, ติดตั้ง Dependencies, รัน Prisma Generate และ Build Nuxt Production ให้จนเสร็จ)*
@@ -65,12 +65,13 @@ docker save -o backups/bru-fq-app.tar bru-fq-app:latest
 
 ---
 
-## 4. ตำแหน่งไฟล์สำคัญที่เตรียมไว้ในโปรเจกต์ (`d:\Project\FQ`)
+## 4. ตำแหน่งไฟล์สำคัญที่เตรียมไว้ในโปรเจกต์ (`d:\git\FQ`)
 
 * 📦 **`deploy-fq.zip`** : แพ็กเกจ Source Code ครบชุด (0.18 MB)
 * 🐳 **`Dockerfile`** : สคริปต์ Multi-stage Build สำหรับ Docker
 * 📄 **`docker-compose.yml`** : การตั้งค่า Service Container และ Network
 * ⚙️ **`.env.production.example`** : แม่แบบ Environment Variables
 * 🗄️ **`backup_bru_facility_evaluation.sql`** : ข้อมูลสำรองฐานข้อมูล SQL ที่แก้ไขสมบูรณ์แล้ว
+* 🐳 **`build-docker-image.bat`** : สคริปต์ดับเบิลคลิกเพื่อสั่ง Build Image และ Export เป็น `.tar` อัตโนมัติ
 * ⚡ **`package-for-ftp.bat`** : สคริปต์ดับเบิลคลิกเพื่อแพ็กไฟล์ zip อัตโนมัติ
 * ⚡ **`backup-database.bat`** : สคริปต์ดับเบิลคลิกสำรองฐานข้อมูลอัตโนมัติ

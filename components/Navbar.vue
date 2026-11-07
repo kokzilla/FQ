@@ -1,17 +1,20 @@
 <template>
   <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-100">
-    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-      <NuxtLink to="/" class="flex items-center space-x-3 group">
-        <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform">
+    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
+      <NuxtLink to="/" class="flex items-center space-x-2.5 sm:space-x-3 group min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform shrink-0">
           BRU
         </div>
-        <div>
-          <h1 class="font-semibold text-slate-900 text-sm md:text-base leading-tight">ระบบประเมินอาคาร</h1>
-          <p class="text-xs text-slate-500">มรภ.บุรีรัมย์</p>
+        <div class="min-w-0">
+          <h1 class="font-semibold text-slate-900 text-sm md:text-base leading-tight truncate">
+            <span class="md:hidden">BRU FQ</span>
+            <span class="hidden md:inline">ระบบประเมินคุณภาพอาคารและการปฏิบัติงานบุคลากร</span>
+          </h1>
+          <p class="text-xs text-slate-500 truncate">มรภ.บุรีรัมย์</p>
         </div>
       </NuxtLink>
 
-      <div class="flex items-center space-x-1 sm:space-x-2">
+      <div class="flex items-center space-x-1 sm:space-x-2 shrink-0">
         <NuxtLink
           to="/"
           class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
@@ -62,9 +65,11 @@
 
 <script setup lang="ts">
 const userSession = useCookie<any>('bru_user_session')
+const adminSession = useCookie<any>('bru_admin_session')
 
 function logout() {
   userSession.value = null
+  adminSession.value = null
   navigateTo('/login')
 }
 </script>

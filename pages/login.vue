@@ -4,7 +4,7 @@
       <div class="inline-flex w-12 h-12 rounded-2xl bg-indigo-600 text-white font-bold items-center justify-center text-lg shadow-md">
         BRU
       </div>
-      <h2 class="text-2xl font-bold text-slate-900 tracking-tight">เข้าสู่ระบบประเมินอาคาร</h2>
+      <h2 class="text-2xl font-bold text-slate-900 tracking-tight">เข้าสู่ระบบประเมินคุณภาพอาคารและการปฏิบัติงานบุคลากร</h2>
       <p class="text-xs text-slate-500">
         เข้าสู่ระบบด้วยบัญชี BRU SSO หรือบัญชีผู้ดูแลระบบ (Admin)
       </p>
