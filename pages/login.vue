@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-3">
       <div class="inline-flex w-12 h-12 rounded-2xl bg-indigo-600 text-white font-bold items-center justify-center text-lg shadow-md">
-        BRU
+        FQ
       </div>
       <h2 class="text-2xl font-bold text-slate-900 tracking-tight">เข้าสู่ระบบประเมินคุณภาพอาคารและการปฏิบัติงานบุคลากร</h2>
       <p class="text-xs text-slate-500">

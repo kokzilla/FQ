@@ -63,6 +63,7 @@
           2. สรุปผลประเมินรายบุคคล
         </button>
 
+        <!-- ซ่อนไว้ก่อนตามคำขอ
         <button
           type="button"
           @click="activeReportTab = 3"
@@ -80,6 +81,7 @@
         >
           ⚠️ 4. วิเคราะห์จุดบกพร่องตามหมวด
         </button>
+        -->
       </div>
 
       <!-- ============================================================== -->
@@ -88,23 +90,19 @@
       <section v-if="activeReportTab === 1" class="space-y-4">
         <!-- Criteria Legend & Controls Card -->
         <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3 print:hidden">
-          <!-- Active Color Criteria Legend for Building -->
-          <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 text-xs">
-            <span class="font-semibold text-slate-700">🎨 เกณฑ์สีสำหรับอาคาร:</span>
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <span>เขียว (≥ {{ activeColorCriteria.building.greenMin }}) : {{ activeColorCriteria.building.greenLabel }}</span>
+          <!-- Active Color Criteria Trigger for Building -->
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100 text-xs">
+            <button
+              type="button"
+              @click="openColorCriteriaModal('building')"
+              class="inline-flex items-center space-x-1.5 text-slate-700 hover:text-indigo-600 transition-colors font-semibold group cursor-pointer"
+              title="คลิกเพื่อดูรายละเอียดระดับเกณฑ์สี"
+            >
+              <span>🎨 ระดับเกณฑ์สี</span>
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-100 text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 font-bold text-[11px] border border-slate-200">
+                ℹ
               </span>
-              <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-medium">
-                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                <span>เหลือง ({{ activeColorCriteria.building.yellowMin }} - &lt; {{ activeColorCriteria.building.greenMin }}) : {{ activeColorCriteria.building.yellowLabel }}</span>
-              </span>
-              <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-medium">
-                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                <span>แดง (&lt; {{ activeColorCriteria.building.yellowMin }}) : {{ activeColorCriteria.building.redLabel }}</span>
-              </span>
-            </div>
+            </button>
           </div>
 
           <!-- Search, Sorting & Table Actions -->
@@ -120,13 +118,13 @@
               <span class="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
             </div>
 
-            <div class="flex items-center space-x-2">
+            <div class="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-2">
               <!-- Sorting dropdown -->
               <div class="flex items-center space-x-1.5">
                 <label class="text-xs text-slate-500 whitespace-nowrap font-medium">เรียงลำดับ:</label>
                 <select
                   v-model="buildingSortBy"
-                  class="text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
+                  class="text-xs sm:text-sm px-2.5 sm:px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
                 >
                   <option value="score_desc">คะแนนสูงสุด → ต่ำสุด</option>
                   <option value="score_asc">คะแนนต่ำสุด → สูงสุด</option>
@@ -134,25 +132,28 @@
                 </select>
               </div>
 
-              <!-- Print button for this table -->
-              <button
-                type="button"
-                @click="printReport"
-                class="px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl transition-all shadow-xs flex items-center space-x-1 flex-shrink-0 cursor-pointer"
-                title="พิมพ์รายงานนี้ออกทางเครื่องพิมพ์"
-              >
-                <span>🖨️ พิมพ์</span>
-              </button>
+              <!-- Action buttons group -->
+              <div class="flex items-center space-x-1.5">
+                <!-- Print button for this table -->
+                <button
+                  type="button"
+                  @click="printReport"
+                  class="px-2.5 sm:px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl transition-all shadow-xs flex items-center space-x-1 flex-shrink-0 cursor-pointer whitespace-nowrap"
+                  title="พิมพ์รายงานนี้ออกทางเครื่องพิมพ์"
+                >
+                  <span>🖨️ พิมพ์</span>
+                </button>
 
-              <!-- Export Excel Button for this table -->
-              <button
-                type="button"
-                @click="exportBuildingExcel"
-                class="px-3 py-2 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl transition-all shadow-xs flex items-center space-x-1 flex-shrink-0 cursor-pointer"
-                title="ส่งออกตารางสรุปรายอาคารเป็นไฟล์ Excel"
-              >
-                <span>📊 ดาวน์โหลด Excel</span>
-              </button>
+                <!-- Export Excel Button for this table -->
+                <button
+                  type="button"
+                  @click="exportBuildingExcel"
+                  class="px-2.5 sm:px-3 py-2 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl transition-all shadow-xs flex items-center space-x-1 flex-shrink-0 cursor-pointer whitespace-nowrap"
+                  title="ส่งออกตารางสรุปรายอาคารเป็นไฟล์ Excel"
+                >
+                  <span>📊 <span class="hidden sm:inline">ดาวน์โหลด </span>Excel</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -232,23 +233,30 @@
                     </div>
                   </td>
 
-                  <!-- Responsible Staff (No parentheses) -->
+                  <!-- Responsible Staff Button (Click to view popup) -->
                   <td class="py-3 px-3.5 text-slate-700">
-                    <span class="font-medium">{{ b.responsibleStaff }}</span>
+                    <button
+                      v-if="getStaffCount(b) > 0"
+                      type="button"
+                      @click="openStaffModal(b.buildingName, getStaffList(b))"
+                      class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 font-medium text-xs transition-colors border border-slate-200/80 cursor-pointer"
+                      title="คลิกเพื่อดูรายชื่อผู้รับผิดชอบประจำอาคาร"
+                    >
+                      <span>🧹 {{ getStaffCount(b) }} ท่าน</span>
+                    </button>
+                    <span v-else class="text-xs text-slate-400 italic">ไม่ระบุ</span>
                   </td>
 
                   <!-- Committee Auditors -->
                   <td class="py-3 px-3.5 text-slate-600">
-                    <div class="space-y-0.5">
-                      <div class="text-[11px] font-semibold text-slate-700">
-                        👥 {{ b.committeeCount }} ท่าน
-                      </div>
-                      <div class="flex flex-wrap gap-1 text-[11px] text-slate-500 print:text-slate-700">
-                        <span v-for="aud in b.auditors" :key="aud" class="bg-slate-100 px-1.5 py-0.2 rounded text-slate-700 print:bg-transparent print:p-0">
-                          {{ aud }}
-                        </span>
-                      </div>
-                    </div>
+                    <button
+                      type="button"
+                      @click="openAuditorsModal(b.buildingName, b.auditors)"
+                      class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 font-medium text-xs transition-colors border border-slate-200/80 cursor-pointer"
+                      title="คลิกเพื่อดูรายชื่อคณะกรรมการที่ตรวจ"
+                    >
+                      <span>👤 {{ b.committeeCount }} ท่าน</span>
+                    </button>
                   </td>
 
                   <!-- Score (0-5.00) -->
@@ -284,23 +292,19 @@
       <section v-else-if="activeReportTab === 2" class="space-y-4">
         <!-- Criteria Legend & Controls Card -->
         <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3 print:hidden">
-          <!-- Active Color Criteria Legend for Staff -->
-          <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 text-xs">
-            <span class="font-semibold text-slate-700">เกณฑ์สีสำหรับบุคลากร:</span>
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <span>เขียว (≥ {{ activeColorCriteria.staff.greenMin }}) : {{ activeColorCriteria.staff.greenLabel }}</span>
+          <!-- Active Color Criteria Trigger for Staff -->
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100 text-xs">
+            <button
+              type="button"
+              @click="openColorCriteriaModal('staff')"
+              class="inline-flex items-center space-x-1.5 text-slate-700 hover:text-indigo-600 transition-colors font-semibold group cursor-pointer"
+              title="คลิกเพื่อดูรายละเอียดระดับเกณฑ์สี"
+            >
+              <span>🎨 ระดับเกณฑ์สี</span>
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-100 text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 font-bold text-[11px] border border-slate-200">
+                ℹ
               </span>
-              <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-medium">
-                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                <span>เหลือง ({{ activeColorCriteria.staff.yellowMin }} - &lt; {{ activeColorCriteria.staff.greenMin }}) : {{ activeColorCriteria.staff.yellowLabel }}</span>
-              </span>
-              <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-medium">
-                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                <span>แดง (&lt; {{ activeColorCriteria.staff.yellowMin }}) : {{ activeColorCriteria.staff.redLabel }}</span>
-              </span>
-            </div>
+            </button>
           </div>
 
           <!-- Controls: Search, Filter Building, Sort & Actions -->
@@ -316,52 +320,111 @@
               <span class="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
             </div>
 
-            <!-- Building Filter -->
-            <div class="flex items-center space-x-2">
-              <label class="text-xs text-slate-500 whitespace-nowrap font-medium">กรองอาคาร:</label>
-              <select
-                v-model="staffBuildingFilter"
-                class="text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
-              >
-                <option value="">ทุกอาคาร ({{ uniqueBuildings.length }} แห่ง)</option>
-                <option v-for="b in uniqueBuildings" :key="b.id" :value="b.id">
-                  {{ b.name }}
-                </option>
-              </select>
-            </div>
+            <div class="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-2">
+              <!-- Building Filter Combobox (Searchable) -->
+              <div class="relative flex items-center space-x-1.5" ref="staffBuildingDropdownRef">
+                <label class="text-xs text-slate-500 whitespace-nowrap font-medium">กรองอาคาร:</label>
+                <div class="relative min-w-[140px] sm:min-w-[180px]">
+                  <input
+                    type="text"
+                    v-model="staffBuildingSearchQuery"
+                    @focus="isStaffBuildingDropdownOpen = true"
+                    @input="isStaffBuildingDropdownOpen = true"
+                    placeholder="ทุกอาคาร..."
+                    class="w-full text-xs sm:text-sm pl-2.5 pr-7 py-2 rounded-xl border border-slate-200 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
+                  />
+                  <!-- Clear / Dropdown icon -->
+                  <div class="absolute inset-y-0 right-0 pr-2 flex items-center gap-1">
+                    <button
+                      v-if="staffBuildingFilter"
+                      type="button"
+                      @click="clearStaffBuildingSelection"
+                      class="text-slate-400 hover:text-slate-600 text-xs p-0.5 rounded-full hover:bg-slate-100"
+                      title="ล้างตัวกรองอาคาร"
+                    >
+                      ✕
+                    </button>
+                    <button
+                      type="button"
+                      @click="isStaffBuildingDropdownOpen = !isStaffBuildingDropdownOpen"
+                      class="text-slate-400 hover:text-slate-600 focus:outline-none transition-transform duration-200"
+                      :class="isStaffBuildingDropdownOpen ? 'rotate-180' : ''"
+                      tabindex="-1"
+                    >
+                      <span class="text-[9px]">▼</span>
+                    </button>
+                  </div>
 
-            <!-- Sort Option -->
-            <div class="flex items-center space-x-2">
-              <label class="text-xs text-slate-500 whitespace-nowrap font-medium">เรียงลำดับ:</label>
-              <select
-                v-model="staffSortBy"
-                class="text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
-              >
-                <option value="score_desc">คะแนนสูงสุด → ต่ำสุด</option>
-                <option value="score_asc">คะแนนต่ำสุด → สูงสุด</option>
-                <option value="building_asc">เรียงตามอาคาร (ก-ฮ)</option>
-                <option value="name_asc">เรียงตามชื่อผู้ปฏิบัติงาน</option>
-              </select>
+                  <!-- Dropdown Menu -->
+                  <div
+                    v-if="isStaffBuildingDropdownOpen"
+                    class="absolute z-30 left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-xl py-1 text-xs divide-y divide-slate-100"
+                  >
+                    <!-- All Buildings Option -->
+                    <div
+                      @click="selectStaffBuilding(null)"
+                      class="px-3 py-2 hover:bg-indigo-50 cursor-pointer flex items-center justify-between transition-colors"
+                      :class="!staffBuildingFilter ? 'bg-indigo-50/80 text-indigo-700 font-semibold' : 'text-slate-700'"
+                    >
+                      <span>ทุกอาคาร ({{ uniqueBuildings.length }} แห่ง)</span>
+                      <span v-if="!staffBuildingFilter" class="text-indigo-600 text-[10px]">✓</span>
+                    </div>
 
-              <!-- Print button for this table -->
-              <button
-                type="button"
-                @click="printReport"
-                class="px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl transition-all shadow-xs flex items-center space-x-1 flex-shrink-0 cursor-pointer"
-                title="พิมพ์รายงานนี้ออกทางเครื่องพิมพ์"
-              >
-                <span>🖨️ พิมพ์</span>
-              </button>
+                    <!-- Individual Buildings -->
+                    <div
+                      v-for="b in filteredStaffBuildings"
+                      :key="b.id"
+                      @click="selectStaffBuilding(b)"
+                      class="px-3 py-2 hover:bg-indigo-50 cursor-pointer flex items-center justify-between transition-colors"
+                      :class="staffBuildingFilter === b.id ? 'bg-indigo-50/80 text-indigo-700 font-semibold' : 'text-slate-700'"
+                    >
+                      <span class="line-clamp-1">{{ b.name }}</span>
+                      <span v-if="staffBuildingFilter === b.id" class="text-indigo-600 text-[10px]">✓</span>
+                    </div>
 
-              <!-- Export Excel Button for this table -->
-              <button
-                type="button"
-                @click="exportStaffExcel"
-                class="px-3 py-2 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl transition-all shadow-xs flex items-center space-x-1 flex-shrink-0 cursor-pointer"
-                title="ส่งออกตารางสรุปรายบุคคลเป็นไฟล์ Excel"
-              >
-                <span>📊 ดาวน์โหลด Excel</span>
-              </button>
+                    <div v-if="filteredStaffBuildings.length === 0" class="px-3 py-2.5 text-center text-[11px] text-slate-400">
+                      ไม่พบอาคารที่ตรงกับ "{{ staffBuildingSearchQuery }}"
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sort Option -->
+              <div class="flex items-center space-x-1.5">
+                <label class="text-xs text-slate-500 whitespace-nowrap font-medium">เรียงลำดับ:</label>
+                <select
+                  v-model="staffSortBy"
+                  class="text-xs sm:text-sm px-2.5 sm:px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
+                >
+                  <option value="score_desc">คะแนนสูงสุด → ต่ำสุด</option>
+                  <option value="score_asc">คะแนนต่ำสุด → สูงสุด</option>
+                  <option value="building_asc">เรียงตามอาคาร (ก-ฮ)</option>
+                  <option value="name_asc">เรียงตามชื่อผู้ปฏิบัติงาน</option>
+                </select>
+              </div>
+
+              <!-- Action buttons group -->
+              <div class="flex items-center space-x-1.5">
+                <!-- Print button for this table -->
+                <button
+                  type="button"
+                  @click="printReport"
+                  class="px-2.5 sm:px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl transition-all shadow-xs flex items-center space-x-1 flex-shrink-0 cursor-pointer whitespace-nowrap"
+                  title="พิมพ์รายงานนี้ออกทางเครื่องพิมพ์"
+                >
+                  <span>🖨️ พิมพ์</span>
+                </button>
+
+                <!-- Export Excel Button for this table -->
+                <button
+                  type="button"
+                  @click="exportStaffExcel"
+                  class="px-2.5 sm:px-3 py-2 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl transition-all shadow-xs flex items-center space-x-1 flex-shrink-0 cursor-pointer whitespace-nowrap"
+                  title="ส่งออกตารางสรุปรายบุคคลเป็นไฟล์ Excel"
+                >
+                  <span>📊 <span class="hidden sm:inline">ดาวน์โหลด </span>Excel</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -372,7 +435,7 @@
           <span
             v-if="staffBuildingFilter || staffSearchQuery"
             class="text-indigo-600 cursor-pointer hover:underline font-medium"
-            @click="staffBuildingFilter = ''; staffSearchQuery = ''"
+            @click="clearAllStaffFilters"
           >
             ✕ ล้างตัวกรอง
           </span>
@@ -420,12 +483,11 @@
                     </div>
                   </th>
                   <th class="py-3.5 px-3.5 font-bold">จุดที่ต้องปรับปรุงเร่งด่วน</th>
-                  <th class="py-3.5 px-3 text-center w-24 font-bold print:hidden">บันทึกรายคน</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 print:divide-slate-300">
                 <tr v-if="filteredStaffAverages.length === 0">
-                  <td colspan="7" class="py-10 text-center text-slate-400">
+                  <td colspan="6" class="py-10 text-center text-slate-400">
                     ไม่พบข้อมูลผู้ปฏิบัติงานตามเงื่อนไขที่เลือก
                   </td>
                 </tr>
@@ -456,16 +518,14 @@
 
                     <!-- Committee Auditors -->
                     <td class="py-3 px-3.5 text-slate-600">
-                      <div class="space-y-0.5">
-                        <div class="text-[11px] font-semibold text-slate-700">
-                          กรรมการ {{ s.committeeCount }} ท่าน
-                        </div>
-                        <div class="flex flex-wrap gap-1 text-[11px] text-slate-500 print:text-slate-700">
-                          <span v-for="aud in s.auditors" :key="aud" class="bg-slate-100 px-1.5 py-0.2 rounded text-slate-700 print:bg-transparent print:p-0">
-                            {{ aud }}
-                          </span>
-                        </div>
-                      </div>
+                      <button
+                        type="button"
+                        @click="openAuditorsModal(s.staffName + (s.buildingName ? ' (' + s.buildingName + ')' : ''), s.auditors)"
+                        class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 font-medium text-xs transition-colors border border-slate-200/80 cursor-pointer"
+                        title="คลิกเพื่อดูรายชื่อคณะกรรมการที่ประเมิน"
+                      >
+                        <span>👤 {{ s.committeeCount }} ท่าน</span>
+                      </button>
                     </td>
 
                     <!-- Score (0-5.00) -->
@@ -487,42 +547,6 @@
                         ⚠️ {{ s.urgentNotes }}
                       </span>
                       <span v-else class="text-slate-400">-</span>
-                    </td>
-
-                    <!-- Drilldown Toggle (Screen only) -->
-                    <td class="py-3 px-3 text-center print:hidden">
-                      <button
-                        type="button"
-                        @click="toggleStaffDrilldown(s.staffKey)"
-                        class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors border"
-                        :class="expandedStaffKeys[s.staffKey] ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-indigo-600 hover:bg-indigo-50 border-slate-200'"
-                        title="ดูผลคะแนนรายกรรมการ"
-                      >
-                        {{ expandedStaffKeys[s.staffKey] ? 'ซ่อน' : 'ดูรายคน' }}
-                      </button>
-                    </td>
-                  </tr>
-
-                  <!-- Expanded Drilldown Row (Screen only) -->
-                  <tr v-if="expandedStaffKeys[s.staffKey]" class="bg-indigo-50/40 border-y border-indigo-100/70 print:hidden">
-                    <td colspan="7" class="p-3 pl-12">
-                      <div class="space-y-1 text-xs">
-                        <div class="font-bold text-indigo-950 pb-1 flex items-center space-x-1.5">
-                          <span>📋 บันทึกการประเมินแยกรายกรรมการ ({{ s.evaluations.length }} ท่าน):</span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                          <div
-                            v-for="ev in s.evaluations"
-                            :key="ev.id"
-                            class="bg-white p-2.5 rounded-xl border border-indigo-100 flex items-center justify-between"
-                          >
-                            <span class="font-medium text-slate-800">{{ ev.assessorName }}</span>
-                            <span class="font-bold text-slate-900 bg-indigo-50 px-2 py-0.5 rounded text-xs">
-                              {{ ev.score }} / 5.00 คะแนน
-                            </span>
-                          </div>
-                        </div>
-                      </div>
                     </td>
                   </tr>
                 </template>
@@ -662,12 +686,180 @@
           </div>
         </div>
       </section>
+
+      <!-- Modal: Color Criteria Popup -->
+      <div v-if="showColorCriteriaModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-xl">🎨</span>
+              <h3 class="text-base font-bold text-slate-900">
+                ระดับเกณฑ์สี ({{ colorCriteriaModalType === 'building' ? 'เกณฑ์สำหรับอาคาร' : 'เกณฑ์สำหรับบุคลากร' }})
+              </h3>
+            </div>
+            <button
+              type="button"
+              @click="showColorCriteriaModal = false"
+              class="text-slate-400 hover:text-slate-600 text-sm p-1 rounded-full hover:bg-slate-100 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="space-y-3 text-xs sm:text-sm">
+            <!-- Green -->
+            <div class="flex items-start space-x-3 p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 text-emerald-950">
+              <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 mt-0.5 flex-shrink-0"></span>
+              <div class="space-y-0.5 flex-1">
+                <div class="font-bold flex items-center justify-between">
+                  <span>{{ currentColorCriteria.greenLabel }} (เขียว)</span>
+                  <span class="font-mono text-emerald-800">≥ {{ currentColorCriteria.greenMin }}</span>
+                </div>
+                <p class="text-[11px] text-emerald-700">ผลการประเมินอยู่ในระดับดีเยี่ยม ผ่านเกณฑ์มาตรฐานสูงสุด</p>
+              </div>
+            </div>
+
+            <!-- Yellow -->
+            <div class="flex items-start space-x-3 p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 text-amber-950">
+              <span class="w-3.5 h-3.5 rounded-full bg-amber-500 mt-0.5 flex-shrink-0"></span>
+              <div class="space-y-0.5 flex-1">
+                <div class="font-bold flex items-center justify-between">
+                  <span>{{ currentColorCriteria.yellowLabel }} (เหลือง)</span>
+                  <span class="font-mono text-amber-800">{{ currentColorCriteria.yellowMin }} - &lt; {{ currentColorCriteria.greenMin }}</span>
+                </div>
+                <p class="text-[11px] text-amber-700">ผลการประเมินอยู่ในระดับปานกลาง ควรปรับปรุงในบางจุด</p>
+              </div>
+            </div>
+
+            <!-- Red -->
+            <div class="flex items-start space-x-3 p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200 text-rose-950">
+              <span class="w-3.5 h-3.5 rounded-full bg-rose-500 mt-0.5 flex-shrink-0"></span>
+              <div class="space-y-0.5 flex-1">
+                <div class="font-bold flex items-center justify-between">
+                  <span>{{ currentColorCriteria.redLabel }} (แดง)</span>
+                  <span class="font-mono text-rose-800">&lt; {{ currentColorCriteria.yellowMin }}</span>
+                </div>
+                <p class="text-[11px] text-rose-700">ผลการประเมินต้องปรับปรุงเร่งด่วน มีข้อบกพร่องที่ต้องแก้ไขทันที</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 flex justify-end">
+            <button
+              type="button"
+              @click="showColorCriteriaModal = false"
+              class="px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors cursor-pointer"
+            >
+              ปิดหน้าต่าง
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: Committee Auditors Popup -->
+      <div v-if="showAuditorsModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-xl">👥</span>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">คณะกรรมการที่ตรวจ</h3>
+                <p class="text-[11px] text-slate-500 line-clamp-1 max-w-[200px]">{{ selectedAuditorsTargetName }}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              @click="showAuditorsModal = false"
+              class="text-slate-400 hover:text-slate-600 text-sm p-1 rounded-full hover:bg-slate-100 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="space-y-2 py-1 max-h-64 overflow-y-auto">
+            <div
+              v-for="(auditor, aIdx) in selectedAuditorsList"
+              :key="aIdx"
+              class="flex items-center space-x-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs sm:text-sm text-slate-800"
+            >
+              <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                {{ aIdx + 1 }}
+              </span>
+              <span class="font-medium">{{ auditor }}</span>
+            </div>
+
+            <div v-if="!selectedAuditorsList || selectedAuditorsList.length === 0" class="text-center py-4 text-xs text-slate-400">
+              ไม่พบรายชื่อคณะกรรมการ
+            </div>
+          </div>
+
+          <div class="pt-2 flex justify-end">
+            <button
+              type="button"
+              @click="showAuditorsModal = false"
+              class="px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors cursor-pointer"
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: Responsible Staff Popup -->
+      <div v-if="showStaffModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-xl">🧹</span>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">ผู้รับผิดชอบประจำอาคาร</h3>
+                <p class="text-[11px] text-slate-500 line-clamp-1 max-w-[200px]">{{ selectedStaffTargetName }}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              @click="showStaffModal = false"
+              class="text-slate-400 hover:text-slate-600 text-sm p-1 rounded-full hover:bg-slate-100 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="space-y-2 py-1 max-h-64 overflow-y-auto">
+            <div
+              v-for="(staff, sIdx) in selectedStaffList"
+              :key="sIdx"
+              class="flex items-center space-x-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs sm:text-sm text-slate-800"
+            >
+              <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                {{ sIdx + 1 }}
+              </span>
+              <span class="font-medium">{{ staff }}</span>
+            </div>
+
+            <div v-if="!selectedStaffList || selectedStaffList.length === 0" class="text-center py-4 text-xs text-slate-400">
+              ไม่พบรายชื่อผู้รับผิดชอบ
+            </div>
+          </div>
+
+          <div class="pt-2 flex justify-end">
+            <button
+              type="button"
+              @click="showStaffModal = false"
+              class="px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors cursor-pointer"
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { onClickOutside } from '@vueuse/core'
 
 const activeReportTab = ref(1)
 const selectedRoundId = ref('round-2570')
@@ -676,6 +868,59 @@ const buildingAverages = ref<any[]>([])
 const staffAverages = ref<any[]>([])
 const trendComparison = ref<any[]>([])
 const categoryStats = ref<any[]>([])
+
+// Modals State
+const showColorCriteriaModal = ref(false)
+const colorCriteriaModalType = ref<'building' | 'staff'>('building')
+
+function openColorCriteriaModal(type: 'building' | 'staff') {
+  colorCriteriaModalType.value = type
+  showColorCriteriaModal.value = true
+}
+
+const currentColorCriteria = computed(() => {
+  return colorCriteriaModalType.value === 'building'
+    ? activeColorCriteria.building
+    : activeColorCriteria.staff
+})
+
+const showAuditorsModal = ref(false)
+const selectedAuditorsTargetName = ref('')
+const selectedAuditorsList = ref<string[]>([])
+
+function openAuditorsModal(targetName: string, auditors: string[]) {
+  selectedAuditorsTargetName.value = targetName
+  selectedAuditorsList.value = auditors || []
+  showAuditorsModal.value = true
+}
+
+const showStaffModal = ref(false)
+const selectedStaffTargetName = ref('')
+const selectedStaffList = ref<string[]>([])
+
+function openStaffModal(targetName: string, staffList: string[]) {
+  selectedStaffTargetName.value = targetName
+  selectedStaffList.value = staffList || []
+  showStaffModal.value = true
+}
+
+function getStaffList(b: any): string[] {
+  if (Array.isArray(b.responsibleStaffList) && b.responsibleStaffList.length > 0) {
+    return b.responsibleStaffList.filter((s: string) => s && s !== 'ไม่ระบุ')
+  }
+  if (b.responsibleStaff && b.responsibleStaff !== 'ไม่ระบุ') {
+    return b.responsibleStaff
+      .split(',')
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0 && s !== 'ไม่ระบุ')
+  }
+  return []
+}
+
+function getStaffCount(b: any): number {
+  if (b.responsibleStaffCount !== undefined) return b.responsibleStaffCount
+  return getStaffList(b).length
+}
 
 // Color criteria loaded from backend
 const activeColorCriteria = reactive({
@@ -758,6 +1003,50 @@ const staffBuildingFilter = ref('')
 const staffSearchQuery = ref('')
 const expandedStaffKeys = ref<Record<string, boolean>>({})
 
+// Building Combobox Filter State
+const staffBuildingDropdownRef = ref<HTMLElement | null>(null)
+const staffBuildingSearchQuery = ref('')
+const isStaffBuildingDropdownOpen = ref(false)
+
+const filteredStaffBuildings = computed(() => {
+  const query = staffBuildingSearchQuery.value.trim().toLowerCase()
+  if (!query) return uniqueBuildings.value
+  return uniqueBuildings.value.filter(b => b.name && b.name.toLowerCase().includes(query))
+})
+
+function selectStaffBuilding(b: { id: string; name: string } | null) {
+  if (b) {
+    staffBuildingFilter.value = b.id
+    staffBuildingSearchQuery.value = b.name
+  } else {
+    staffBuildingFilter.value = ''
+    staffBuildingSearchQuery.value = ''
+  }
+  isStaffBuildingDropdownOpen.value = false
+}
+
+function clearStaffBuildingSelection() {
+  selectStaffBuilding(null)
+}
+
+function clearAllStaffFilters() {
+  staffBuildingFilter.value = ''
+  staffSearchQuery.value = ''
+  staffBuildingSearchQuery.value = ''
+}
+
+onClickOutside(staffBuildingDropdownRef, () => {
+  isStaffBuildingDropdownOpen.value = false
+  if (staffBuildingFilter.value) {
+    const current = uniqueBuildings.value.find(b => b.id === staffBuildingFilter.value)
+    if (current) {
+      staffBuildingSearchQuery.value = current.name
+    }
+  } else {
+    staffBuildingSearchQuery.value = ''
+  }
+})
+
 function toggleStaffSort(column: 'score' | 'name' | 'building') {
   if (column === 'score') {
     staffSortBy.value = staffSortBy.value === 'score_desc' ? 'score_asc' : 'score_desc'
@@ -779,7 +1068,9 @@ const uniqueBuildings = computed(() => {
       map[s.buildingId] = s.buildingName || s.buildingId
     }
   }
-  return Object.entries(map).map(([id, name]) => ({ id, name }))
+  return Object.entries(map)
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th', { numeric: true }))
 })
 
 const filteredStaffAverages = computed(() => {

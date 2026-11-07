@@ -140,6 +140,8 @@ export default defineEventHandler(async (event) => {
       buildingId: b.buildingId,
       buildingName: b.buildingName,
       responsibleStaff: Array.from(b.responsibleStaffList).join(', ') || 'ไม่ระบุ',
+      responsibleStaffList: Array.from(b.responsibleStaffList).filter(s => s && s !== 'ไม่ระบุ'),
+      responsibleStaffCount: Array.from(b.responsibleStaffList).filter(s => s && s !== 'ไม่ระบุ').length,
       committeeCount: b.auditors.length,
       auditors: b.auditors,
       totalScoreObtained: Math.round(totalScoreSum * 10) / 10,

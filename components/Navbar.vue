@@ -3,7 +3,7 @@
     <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
       <NuxtLink to="/" class="flex items-center space-x-2.5 sm:space-x-3 group min-w-0">
         <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform shrink-0">
-          BRU
+          FQ
         </div>
         <div class="min-w-0">
           <h1 class="font-semibold text-slate-900 text-sm md:text-base leading-tight truncate">
