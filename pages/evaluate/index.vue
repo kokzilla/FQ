@@ -621,7 +621,11 @@ function getExistingAssessment(staffId?: string | null, staffName?: string | nul
   if (!existingAssessments.value.length) return null
   return existingAssessments.value.find((a: any) => {
     if (staffId && a.staffId && a.staffId === staffId) return true
-    if (staffName && a.responsibleStaffText && a.responsibleStaffText.trim() === staffName.trim()) return true
+    if (staffName && a.responsibleStaffText) {
+      const nameA = formatStaffDisplayName(a.responsibleStaffText).trim().toLowerCase()
+      const nameB = formatStaffDisplayName(staffName).trim().toLowerCase()
+      if (nameA && nameB && nameA === nameB) return true
+    }
     return false
   }) || null
 }
@@ -636,11 +640,15 @@ function selectStaff(s: any) {
   form.staffId = s.id
   form.responsibleStaffText = s.staffName
 
+  // ล้างฟอร์มให้สะอาดบริสุทธิ์เสมอเพื่อไม่ให้จำค่าคนเดิม
+  resetScoresAndFindings()
+
   const existing = getExistingAssessment(s.id, s.staffName)
   if (existing) {
     loadExistingAssessmentData(existing)
   } else {
-    resetScoresAndFindings()
+    // โหลด Draft เฉพาะบุคคล (ถ้ามี)
+    loadDraftForStaff(s.id)
   }
   saveDraft()
 }
@@ -651,6 +659,7 @@ function selectCustomStaff() {
   form.staffId = ''
   form.responsibleStaffText = ''
   resetScoresAndFindings()
+  loadDraftForStaff('__CUSTOM__')
   saveDraft()
 }
 
@@ -699,6 +708,7 @@ function resetScoresAndFindings() {
   for (const q of dynamicQuestions.value) {
     form.scores[q.id] = { score: null, isNA: false, defectNote: '', photoUrl: '' }
   }
+  activeTab.value = 1
 }
 
 async function onBuildingChange() {
@@ -708,7 +718,9 @@ async function onBuildingChange() {
     await fetchExistingAssessments()
 
     if (b.staffs && b.staffs.length > 0) {
-      selectStaff(b.staffs[0])
+      // ค้นหาผู้ดูแลคนแรกที่ยังไม่ได้รับการประเมิน (ยังไม่มี ✓) ก่อน
+      const unevaluated = b.staffs.find((s: any) => !isStaffEvaluated(s.id, s.staffName))
+      selectStaff(unevaluated || b.staffs[0])
     } else {
       selectCustomStaff()
     }
@@ -719,7 +731,6 @@ async function onBuildingChange() {
     form.responsibleStaffText = ''
     resetScoresAndFindings()
   }
-  saveDraft()
 }
 
 watch(selectedRoundId, async () => {
@@ -734,11 +745,19 @@ watch(selectedRoundId, async () => {
   }
 })
 
-// Auto-Save Draft
-const DRAFT_KEY = 'bru_eval_draft_v1'
+// Auto-Save Draft (แยกรายบุคคลตามรอบ อาคาร และผู้ปฏิบัติงาน)
+function getDraftKey(roundId?: string, buildingId?: string, staffId?: string) {
+  const r = roundId || selectedRoundId.value || 'round-2570'
+  const b = buildingId || selectedBuildingId.value || 'no-bldg'
+  const s = staffId || selectedStaffId.value || (isCustomStaff.value ? '__CUSTOM__' : 'default')
+  return `bru_eval_draft_${r}_${b}_${s}`
+}
+
 function saveDraft() {
-  if (process.client) {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+  if (process.client && selectedBuildingId.value && selectedStaffId.value) {
+    const key = getDraftKey()
+    localStorage.setItem(key, JSON.stringify({
+      selectedRoundId: selectedRoundId.value,
       selectedBuildingId: selectedBuildingId.value,
       selectedStaffId: selectedStaffId.value,
       isCustomStaff: isCustomStaff.value,
@@ -748,35 +767,48 @@ function saveDraft() {
   }
 }
 
-function loadDraft() {
-  if (process.client) {
-    const draft = localStorage.getItem(DRAFT_KEY)
-    if (draft) {
-      try {
-        const parsed = JSON.parse(draft)
-        selectedBuildingId.value = parsed.selectedBuildingId || ''
-        selectedStaffId.value = parsed.selectedStaffId || ''
-        isCustomStaff.value = !!parsed.isCustomStaff
+function loadDraftForStaff(staffId?: string): boolean {
+  if (!process.client) return false
+  const key = getDraftKey(selectedRoundId.value, selectedBuildingId.value, staffId || selectedStaffId.value)
+  const draft = localStorage.getItem(key)
+  if (draft) {
+    try {
+      const parsed = JSON.parse(draft)
+      if (parsed.form) {
         currentAssessmentId.value = parsed.currentAssessmentId || null
-        if (parsed.form) {
-          Object.assign(form, parsed.form)
-        }
-      } catch (e) {
-        console.error('Failed to parse draft', e)
+        Object.assign(form, parsed.form)
+        return true
       }
+    } catch (e) {
+      console.error('Failed to parse draft', e)
     }
+  }
+  return false
+}
+
+function clearDraft(staffId?: string) {
+  if (process.client) {
+    const key = getDraftKey(selectedRoundId.value, selectedBuildingId.value, staffId || selectedStaffId.value)
+    localStorage.removeItem(key)
+    localStorage.removeItem('bru_eval_draft_v1')
   }
 }
 
 function resetForm() {
   if (confirm('คุณต้องการล้างข้อมูลแบบประเมินทั้งหมดและเริ่มใหม่ใช่หรือไม่?')) {
-    if (process.client) localStorage.removeItem(DRAFT_KEY)
-    location.reload()
+    clearDraft()
+    resetScoresAndFindings()
+    selectedBuildingId.value = ''
+    buildingSearchQuery.value = ''
+    selectedStaffId.value = ''
+    form.buildingName = ''
+    form.staffId = ''
+    form.responsibleStaffText = ''
+    existingAssessments.value = []
   }
 }
 
 onMounted(async () => {
-  loadDraft()
   try {
     const [bRes, rRes, qRes, cRes]: any = await Promise.all([
       $fetch('/api/buildings'),
@@ -891,16 +923,40 @@ async function submitAssessment() {
     })
 
     if (res?.ok) {
-      if (process.client) localStorage.removeItem(DRAFT_KEY)
+      clearDraft(form.staffId || selectedStaffId.value)
       await fetchExistingAssessments()
+
+      const evaluatedName = formatStaffDisplayName(form.responsibleStaffText)
       showToast(currentAssessmentId.value
-        ? 'บันทึกการแก้ไขผลการประเมินสำเร็จ!'
-        : `บันทึกผลการประเมินสำเร็จ! (${res.data?.gradeLabel || evaluationResult.value.gradeLabel})`
+        ? `บันทึกการแก้ไขผลการประเมินของ "${evaluatedName}" สำเร็จ!`
+        : `บันทึกผลการประเมินของ "${evaluatedName}" สำเร็จ! (${res.data?.gradeLabel || evaluationResult.value.gradeLabel})`
       )
-      setTimeout(() => {
-        navigateTo('/')
-      }, 1200)
+
+      // ตรวจสอบว่าในอาคารนี้ยังมีผู้ดูแลคนอื่นที่ยังไม่ได้รับการประเมินหรือไม่
+      const remainingStaff = currentBuildingStaffs.value.find((s: any) => !isStaffEvaluated(s.id, s.staffName))
+
+      if (remainingStaff) {
+        // ยังมีผู้ดูแลคนอื่นที่ยังไม่ได้รับการประเมิน -> สลับไปประเมินคนถัดไปอัตโนมัติ พร้อมฟอร์มสะอาด
+        setTimeout(() => {
+          selectStaff(remainingStaff)
+          showToast(`สลับไปยังผู้ดูแลถัดไป: "${formatStaffDisplayName(remainingStaff.staffName)}" พร้อมตรวจประเมินต่อ`, 'success')
+        }, 800)
+      } else {
+        // ประเมินครบทุกคนในอาคารนี้แล้ว
+        setTimeout(() => {
+          showToast(`ประเมินผู้ดูแลครบทุกคนใน ${form.buildingName} แล้ว`, 'success')
+        }, 600)
+        setTimeout(() => {
+          navigateTo('/')
+        }, 2000)
+      }
     }
+  } catch (err: any) {
+    showToast(err?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error')
+  } finally {
+    isSubmitting.value = false
+  }
+}
   } catch (err: any) {
     showToast(err?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error')
   } finally {
