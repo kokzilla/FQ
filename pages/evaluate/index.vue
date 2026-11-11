@@ -116,7 +116,7 @@
                 </div>
 
                 <div v-if="filteredBuildings.length === 0" class="px-4 py-3 text-center text-xs text-slate-400">
-                  ไม่พบอาคารที่ตรงกับ "{{ buildingSearchQuery }}"
+                  {{ assignedBuildings.length === 0 ? 'คุณยังไม่ได้รับมอบหมายให้เป็นกรรมการประจำอาคารใด' : `ไม่พบอาคารที่ตรงกับ "${buildingSearchQuery}"` }}
                 </div>
               </div>
             </div>
@@ -124,16 +124,26 @@
 
           <!-- Responsible Staff (Button List) -->
           <div class="sm:col-span-2 space-y-2">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-2">
               <label class="block text-xs font-medium text-slate-700">
                 ผู้ปฏิบัติงาน / แม่บ้านที่จะประเมิน (รายบุคคล) <span class="text-rose-500">*</span>
               </label>
-              <span v-if="form.responsibleStaffText" class="text-[11px] text-slate-500">
-                กำลังเลือก: <strong class="text-indigo-600 font-semibold">{{ form.responsibleStaffText }}</strong>
-                <span v-if="currentAssessmentId" class="ml-1 text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+              <div v-if="form.responsibleStaffText" class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                <span>
+                  กำลังเลือก: <strong class="text-indigo-600 font-semibold">{{ form.responsibleStaffText }}</strong>
+                </span>
+                <span v-if="currentAssessmentId" class="text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
                   (มีผลประเมินเดิม)
                 </span>
-              </span>
+                <button
+                  v-if="currentAssessmentId"
+                  type="button"
+                  @click="deleteAssessmentById(currentAssessmentId, form.responsibleStaffText)"
+                  class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
+                >
+                  🗑️ ลบผลการประเมินนี้
+                </button>
+              </div>
             </div>
 
             <div v-if="!selectedBuildingId" class="text-xs text-slate-400 italic py-2">
@@ -155,10 +165,20 @@
                 >
                   <span>{{ formatStaffDisplayName(s.staffName) }}</span>
                   <span
+                    class="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
+                    :class="selectedStaffId === s.id && !isCustomStaff
+                      ? 'bg-indigo-500 text-white'
+                      : getStaffEvaluatorCount(s.id, s.staffName) >= 5
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-slate-100 text-slate-600'"
+                  >
+                    {{ getStaffEvaluatorCount(s.id, s.staffName) >= 5 ? `(ครบ ${getStaffEvaluatorCount(s.id, s.staffName)}/5 คน)` : `(${getStaffEvaluatorCount(s.id, s.staffName)}/5 คน)` }}
+                  </span>
+                  <span
                     v-if="isStaffEvaluated(s.id, s.staffName)"
                     class="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold"
                     :class="selectedStaffId === s.id && !isCustomStaff ? 'bg-white text-emerald-600' : 'bg-emerald-100 text-emerald-700'"
-                    title="ประเมินแล้ว"
+                    title="คุณประเมินแล้ว"
                   >
                     ✓
                   </span>
@@ -186,6 +206,20 @@
                   class="flex-1 text-sm px-3.5 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50/20 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 />
               </div>
+
+              <!-- Quota Full Warning Banner for 6th Evaluator -->
+              <div
+                v-if="isSelectedStaffQuotaFullAndLocked"
+                class="mt-2 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start space-x-2.5 text-xs sm:text-sm"
+              >
+                <span class="text-base leading-none mt-0.5">⚠️</span>
+                <div class="space-y-0.5">
+                  <p class="font-bold">บุคคลนี้ถูกประเมินครบแล้ว ไม่สามารถประเมินได้อีก</p>
+                  <p class="text-xs text-amber-700">
+                    ผู้ปฏิบัติงานท่านนี้ได้รับการประเมินจากกรรมการครบโควตา 5/5 คนในรอบนี้เรียบร้อยแล้ว
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -209,10 +243,10 @@
       </div>
 
       <!-- Part 1: Evaluation Questions -->
-      <section v-if="activeTab <= 7" class="space-y-3">
+      <section v-if="activeTab <= 7" class="space-y-3" :class="isSelectedStaffQuotaFullAndLocked ? 'opacity-50 pointer-events-none select-none' : ''">
         <div class="flex items-center justify-between pb-1">
           <h3 class="text-sm font-semibold text-slate-800">{{ currentCategoryName }}</h3>
-          <span class="text-xs text-slate-400">ประเมิน 1-5 หรือ N/A</span>
+          <span class="text-xs text-slate-400">ประเมินระดับคะแนน 1-5</span>
         </div>
 
         <QuestionCard
@@ -231,7 +265,7 @@
         />
 
         <!-- Next / Previous Category Quick Navigation -->
-        <div class="flex items-center justify-between pt-4">
+        <div class="flex items-center justify-between pt-4 pb-6">
           <button
             v-if="activeTab > 1"
             type="button"
@@ -253,7 +287,7 @@
       </section>
 
       <!-- Part 2: Findings & Follow-up (Tab 8) -->
-      <section v-else-if="activeTab === 8" class="space-y-4">
+      <section v-else-if="activeTab === 8" class="space-y-4" :class="isSelectedStaffQuotaFullAndLocked ? 'opacity-50 pointer-events-none select-none' : ''">
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
           <h3 class="text-base font-semibold text-slate-900 border-b border-slate-100 pb-2">
             ตอนที่ 2 ข้อค้นพบจากการตรวจ
@@ -303,13 +337,13 @@
           </div>
         </div>
 
-        <!-- Digital Signature -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-3">
+        <!-- Digital Signature (Hidden as requested) -->
+        <div v-if="false" class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-3">
           <SignaturePad v-model="form.signatureImage" />
         </div>
 
         <!-- Navigation Buttons -->
-        <div class="flex items-center justify-between pt-2">
+        <div class="flex items-center justify-between pt-2 pb-6">
           <button
             type="button"
             @click="changeTab(7)"
@@ -321,7 +355,7 @@
           <button
             type="button"
             @click="submitAssessment"
-            :disabled="isSubmitting"
+            :disabled="isSubmitting || isSelectedStaffQuotaFullAndLocked"
             class="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-95 transition-all flex items-center space-x-2 disabled:opacity-50"
           >
             <span v-if="isSubmitting">กำลังบันทึก...</span>
@@ -343,18 +377,10 @@
     >
       <template #action>
         <button
-          v-if="activeTab < 8"
-          type="button"
-          @click="changeTab(8)"
-          class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-sm"
-        >
-          สรุปและลงนาม →
-        </button>
-        <button
-          v-else
+          v-if="activeTab === 8"
           type="button"
           @click="submitAssessment"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || isSelectedStaffQuotaFullAndLocked"
           class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
         >
           {{ currentAssessmentId ? 'บันทึกแก้ไข' : 'ส่งผลประเมิน' }}
@@ -430,11 +456,32 @@ const buildingDropdownRef = ref<HTMLElement | null>(null)
 const buildingSearchQuery = ref('')
 const isBuildingDropdownOpen = ref(false)
 
+const assignedBuildings = computed(() => {
+  const session = userSession.value
+  if (!session || session.role === 'ADMIN') {
+    return buildings.value
+  }
+  const sId = session.id
+  const sLogin = (session.userlogin || '').trim().toLowerCase()
+  const sName = formatStaffDisplayName(session.fullName || '').trim().toLowerCase()
+
+  return buildings.value.filter((b: any) => {
+    if (!Array.isArray(b.auditors) || b.auditors.length === 0) return false
+    return b.auditors.some((aud: any) => {
+      if (sId && aud.userId && aud.userId === sId) return true
+      if (sLogin && aud.userlogin && String(aud.userlogin).trim().toLowerCase() === sLogin) return true
+      const aName = formatStaffDisplayName(aud.fullName || '').trim().toLowerCase()
+      if (sName && aName && aName === sName) return true
+      return false
+    })
+  })
+})
+
 const filteredBuildings = computed(() => {
   const query = buildingSearchQuery.value.trim().toLowerCase()
   const list = query
-    ? buildings.value.filter(b => b.name && b.name.toLowerCase().includes(query))
-    : [...buildings.value]
+    ? assignedBuildings.value.filter(b => b.name && b.name.toLowerCase().includes(query))
+    : [...assignedBuildings.value]
 
   return list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th', { numeric: true }))
 })
@@ -488,6 +535,8 @@ function changeTab(tabId: number) {
 // Assessment Tracking State
 const currentAssessmentId = ref<string | null>(null)
 const existingAssessments = ref<any[]>([])
+const allBuildingAssessments = ref<any[]>([])
+const myRoundAssessments = ref<any[]>([])
 
 const currentAssessorDisplayName = computed(() => {
   return userSession.value?.fullName || form.assessorName || 'กรรมการผู้ตรวจประเมิน'
@@ -521,7 +570,7 @@ const tabOptions = computed(() => [
   { id: 5, shortLabel: '5. นอกอาคาร/สวน', badge: getCategoryAnsweredCount(5) },
   { id: 6, shortLabel: '6. ปลอดภัย/จิตสาธารณะ', badge: getCategoryAnsweredCount(6) },
   { id: 7, shortLabel: '7. อื่นๆ/ป้าย', badge: getCategoryAnsweredCount(7) },
-  { id: 8, shortLabel: 'ตอนที่ 2 สรุป/ลงนาม', badge: '' },
+  { id: 8, shortLabel: 'ตอนที่ 2 ข้อค้นพบ/สรุปผล', badge: '' },
 ])
 
 const currentCategoryName = computed(() => {
@@ -592,28 +641,138 @@ const currentBuildingStaffs = computed(() => {
   return b?.staffs || []
 })
 
-async function fetchExistingAssessments() {
-  if (!selectedBuildingId.value || !selectedRoundId.value) {
-    existingAssessments.value = []
+function isCurrentAssessorRecord(a: any): boolean {
+  const session = userSession.value
+  if (!session) return false
+  if (session.id && a.assessorId === session.id) return true
+  if (session.userlogin && (a.assessorId === session.userlogin || a.assessor?.userlogin === session.userlogin)) return true
+  const sName = formatStaffDisplayName(session.fullName || '').trim().toLowerCase()
+  const aName = formatStaffDisplayName(a.assessor?.fullName || a.assessorName || '').trim().toLowerCase()
+  if (sName && aName && sName === aName) return true
+  return false
+}
+
+async function fetchMyRoundAssessments() {
+  if (!selectedRoundId.value) {
+    myRoundAssessments.value = []
     return
   }
   try {
     const assessorId = userSession.value?.id || userSession.value?.userlogin
+    if (!assessorId) {
+      myRoundAssessments.value = []
+      return
+    }
     const res: any = await $fetch('/api/assessments', {
       params: {
         roundId: selectedRoundId.value,
-        buildingId: selectedBuildingId.value,
-        assessorId: assessorId || undefined
+        assessorId
       }
     })
     if (res?.ok && Array.isArray(res.data)) {
-      existingAssessments.value = res.data
+      myRoundAssessments.value = res.data
     } else {
+      myRoundAssessments.value = []
+    }
+  } catch (err) {
+    console.error('Failed to fetch my round assessments', err)
+    myRoundAssessments.value = []
+  }
+}
+
+async function fetchExistingAssessments() {
+  await fetchMyRoundAssessments()
+  if (!selectedBuildingId.value || !selectedRoundId.value) {
+    existingAssessments.value = []
+    allBuildingAssessments.value = []
+    return
+  }
+  try {
+    const res: any = await $fetch('/api/assessments', {
+      params: {
+        roundId: selectedRoundId.value,
+        buildingId: selectedBuildingId.value
+      }
+    })
+    if (res?.ok && Array.isArray(res.data)) {
+      allBuildingAssessments.value = res.data
+      existingAssessments.value = res.data.filter((a: any) => isCurrentAssessorRecord(a))
+    } else {
+      allBuildingAssessments.value = []
       existingAssessments.value = []
     }
   } catch (err) {
     console.error('Failed to fetch existing assessments', err)
+    allBuildingAssessments.value = []
     existingAssessments.value = []
+  }
+}
+
+function getStaffEvaluatorCount(staffId?: string | null, staffName?: string | null): number {
+  if (!allBuildingAssessments.value.length) return 0
+  const targetName = staffName ? formatStaffDisplayName(staffName).trim().toLowerCase() : ''
+  const matching = allBuildingAssessments.value.filter((a: any) => {
+    if (staffId && a.staffId && a.staffId === staffId) return true
+    if (targetName && a.responsibleStaffText) {
+      const nameA = formatStaffDisplayName(a.responsibleStaffText).trim().toLowerCase()
+      if (nameA && nameA === targetName) return true
+    }
+    return false
+  })
+  const uniqueAssessors = new Set(matching.map((a: any) => a.assessorId || a.assessor?.userlogin || a.id))
+  return uniqueAssessors.size
+}
+
+const isSelectedStaffQuotaFullAndLocked = computed(() => {
+  if (!selectedBuildingId.value || !form.responsibleStaffText || !form.responsibleStaffText.trim()) return false
+  if (currentAssessmentId.value) return false // 1 ใน 5 คนเดิมยังดู/แก้ไข/ลบได้
+  const count = getStaffEvaluatorCount(form.staffId, form.responsibleStaffText)
+  return count >= 5
+})
+
+async function deleteAssessmentById(id: string, staffName?: string) {
+  if (!id) return
+  const displayStaff = formatStaffDisplayName(staffName || form.responsibleStaffText || 'ผู้ปฏิบัติงาน')
+  if (!confirm(`คุณต้องการลบผลการประเมินของ "${displayStaff}" ใช่หรือไม่?`)) return
+
+  try {
+    const res: any = await $fetch(`/api/assessments/${id}`, {
+      method: 'DELETE'
+    })
+    if (res?.ok) {
+      showToast(`ลบผลการประเมินของ "${displayStaff}" เรียบร้อยแล้ว`, 'success')
+      if (currentAssessmentId.value === id) {
+        clearDraft(form.staffId || selectedStaffId.value)
+        resetScoresAndFindings()
+      }
+      await fetchExistingAssessments()
+    }
+  } catch (err: any) {
+    showToast(err?.data?.message || err?.message || 'เกิดข้อผิดพลาดในการลบผลการประเมิน', 'error')
+  }
+}
+
+async function editMyAssessmentItem(item: any) {
+  if (!item) return
+  const b = buildings.value.find((x: any) => x.id === item.buildingId)
+  if (b) {
+    selectedBuildingId.value = b.id
+    buildingSearchQuery.value = b.name
+    form.buildingName = b.name
+    await fetchExistingAssessments()
+    const matchedStaff = (b.staffs || []).find((s: any) =>
+      (item.staffId && s.id === item.staffId) ||
+      formatStaffDisplayName(s.staffName).toLowerCase() === formatStaffDisplayName(item.responsibleStaffText).toLowerCase()
+    )
+    if (matchedStaff) {
+      selectStaff(matchedStaff)
+    } else {
+      isCustomStaff.value = true
+      selectedStaffId.value = '__CUSTOM__'
+      form.staffId = item.staffId || ''
+      form.responsibleStaffText = item.responsibleStaffText || ''
+      loadExistingAssessmentData(item)
+    }
   }
 }
 
@@ -851,8 +1010,44 @@ onMounted(async () => {
       Object.assign(colorCriteria, cRes.data.building)
     }
 
-    if (selectedBuildingId.value) {
+    const route = useRoute()
+    if (route.query.roundId) {
+      selectedRoundId.value = String(route.query.roundId)
+    }
+
+    if (route.query.buildingId) {
+      const targetBldg = buildings.value.find((b: any) => b.id === route.query.buildingId || b.code === route.query.buildingId)
+      if (targetBldg) {
+        selectedBuildingId.value = targetBldg.id
+        buildingSearchQuery.value = targetBldg.name
+        form.buildingName = targetBldg.name
+        await fetchExistingAssessments()
+
+        const targetStaffId = route.query.staffId ? String(route.query.staffId) : ''
+        const targetStaffName = route.query.staffName ? String(route.query.staffName) : ''
+
+        const matchedStaff = (targetBldg.staffs || []).find((s: any) =>
+          (targetStaffId && s.id === targetStaffId) ||
+          (targetStaffName && formatStaffDisplayName(s.staffName).toLowerCase() === formatStaffDisplayName(targetStaffName).toLowerCase())
+        )
+
+        if (matchedStaff) {
+          selectStaff(matchedStaff)
+        } else if (targetStaffName) {
+          isCustomStaff.value = true
+          selectedStaffId.value = '__CUSTOM__'
+          form.staffId = targetStaffId
+          form.responsibleStaffText = targetStaffName
+          const existing = getExistingAssessment(targetStaffId, targetStaffName)
+          if (existing) {
+            loadExistingAssessmentData(existing)
+          }
+        }
+      }
+    } else if (selectedBuildingId.value) {
       await fetchExistingAssessments()
+    } else {
+      await fetchMyRoundAssessments()
     }
   } catch (err) {
     console.error('Error fetching data', err)
@@ -877,7 +1072,12 @@ async function submitAssessment() {
     return
   }
 
-  // ตรวจสอบการให้คะแนนครบทุกข้อ และตรวจสอบการระบุข้อบกพร่องเมื่อให้คะแนน <= 3
+  if (isSelectedStaffQuotaFullAndLocked.value) {
+    showToast('บุคคลนี้ถูกประเมินครบ 5 คนแล้ว ไม่สามารถประเมินได้อีก', 'error')
+    return
+  }
+
+  // ตรวจสอบการให้คะแนนครบทุกข้อ (ไม่บังคับกรอกเหตุผลเมื่อคะแนน <= 3)
   for (const q of dynamicQuestions.value) {
     const item = form.scores[q.id]
     const isAnswered = item && (item.isNA || (item.score !== null && item.score !== undefined))
@@ -885,13 +1085,6 @@ async function submitAssessment() {
       activeTab.value = q.categoryId
       showToast(`กรุณาประเมินข้อที่ ${q.itemNumber} ในหมวดที่ ${q.categoryId} ให้ครบถ้วนก่อนส่งผล`, 'error')
       return
-    }
-    if (!item.isNA && item.score !== null && item.score !== undefined && item.score <= 3) {
-      if (!item.defectNote || !item.defectNote.trim()) {
-        activeTab.value = q.categoryId
-        showToast(`ข้อที่ ${q.itemNumber} ได้คะแนน ${item.score} กรุณาระบุข้อบกพร่องที่พบ`, 'error')
-        return
-      }
     }
   }
 
@@ -932,8 +1125,10 @@ async function submitAssessment() {
         : `บันทึกผลการประเมินของ "${evaluatedName}" สำเร็จ! (${res.data?.gradeLabel || evaluationResult.value.gradeLabel})`
       )
 
-      // ตรวจสอบว่าในอาคารนี้ยังมีผู้ดูแลคนอื่นที่ยังไม่ได้รับการประเมินหรือไม่
-      const remainingStaff = currentBuildingStaffs.value.find((s: any) => !isStaffEvaluated(s.id, s.staffName))
+      // ตรวจสอบว่าในอาคารนี้ยังมีผู้ดูแลคนอื่นที่ยังไม่ได้รับการประเมินและยังไม่เต็มโควตา 5 คนหรือไม่
+      const remainingStaff = currentBuildingStaffs.value.find(
+        (s: any) => !isStaffEvaluated(s.id, s.staffName) && getStaffEvaluatorCount(s.id, s.staffName) < 5
+      )
 
       if (remainingStaff) {
         // ยังมีผู้ดูแลคนอื่นที่ยังไม่ได้รับการประเมิน -> สลับไปประเมินคนถัดไปอัตโนมัติ พร้อมฟอร์มสะอาด
@@ -952,13 +1147,7 @@ async function submitAssessment() {
       }
     }
   } catch (err: any) {
-    showToast(err?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error')
-  } finally {
-    isSubmitting.value = false
-  }
-}
-  } catch (err: any) {
-    showToast(err?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error')
+    showToast(err?.data?.message || err?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error')
   } finally {
     isSubmitting.value = false
   }

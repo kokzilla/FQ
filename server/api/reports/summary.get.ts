@@ -191,6 +191,20 @@ export default defineEventHandler(async (event) => {
   }
 
   const staffAverages = Object.values(staffMap).map(s => {
+    // จำกัดการคิดคะแนนเฉลี่ยของผู้ปฏิบัติงานจากผู้ประเมินสูงสุดไม่เกิน 5 คนแรก (เรียงตามลำดับการประเมินก่อน-หลัง)
+    const sortedByFirst = [...s.evaluations].sort((a, b) => new Date(a.assessedAt).getTime() - new Date(b.assessedAt).getTime())
+    const seenAssessors = new Set<string>()
+    const cappedEvaluations: any[] = []
+    for (const ev of sortedByFirst) {
+      const key = ev.assessorId || ev.assessorName || ev.id
+      if (!seenAssessors.has(key)) {
+        seenAssessors.add(key)
+        cappedEvaluations.push(ev)
+        if (cappedEvaluations.length >= 5) break
+      }
+    }
+    const cappedAuditors = Array.from(new Set(cappedEvaluations.map(e => e.assessorName).filter(Boolean)))
+
     let totalScoreSum = 0
     let evaluatedQuestionsCount = 0
     const itemAverages: Record<number, number> = {}
@@ -199,7 +213,7 @@ export default defineEventHandler(async (event) => {
       let qScoresTotal = 0
       let qVotersCount = 0
 
-      for (const ev of s.evaluations) {
+      for (const ev of cappedEvaluations) {
         const item = ev.scores?.[qId]
         if (item && !item.isNA && item.score !== null && item.score !== undefined) {
           qScoresTotal += Number(item.score)
@@ -226,7 +240,7 @@ export default defineEventHandler(async (event) => {
     // ประเมินผลระดับสีและป้ายกำกับตามเกณฑ์สีบุคลากร
     const { gradeColor, gradeLabel, levelKey } = evaluateColorGrade(roundedScore, colorCriteria.staff)
 
-    const urgentNotes = s.evaluations.map(e => e.urgentProblems).filter(Boolean).join('; ')
+    const urgentNotes = cappedEvaluations.map(e => e.urgentProblems).filter(Boolean).join('; ')
 
     return {
       staffKey: s.staffKey,
@@ -234,8 +248,8 @@ export default defineEventHandler(async (event) => {
       staffName: s.staffName,
       buildingId: s.buildingId,
       buildingName: s.buildingName,
-      committeeCount: s.auditors.length,
-      auditors: s.auditors,
+      committeeCount: cappedAuditors.length,
+      auditors: cappedAuditors,
       totalScoreObtained: Math.round(totalScoreSum * 10) / 10,
       totalMaxScore: maxScore,
       score: roundedScore,
@@ -245,8 +259,8 @@ export default defineEventHandler(async (event) => {
       gradeLabel,
       gradeColor,
       urgentNotes,
-      evaluationsCount: s.evaluations.length,
-      evaluations: s.evaluations.map(e => ({
+      evaluationsCount: cappedEvaluations.length,
+      evaluations: cappedEvaluations.map(e => ({
         id: e.id,
         assessorName: e.assessorName,
         score: e.totalMaxScore > 0 ? (e.totalScoreObtained / (e.totalMaxScore / 5)).toFixed(2) : '0.00',

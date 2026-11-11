@@ -14,6 +14,14 @@ export interface ColorCriteriaSettings {
   staff: ColorThresholdConfig
 }
 
+export interface AssignedAuditor {
+  userId?: string
+  userlogin: string
+  fullName: string
+}
+
+export type BuildingAuditorsMap = Record<string, AssignedAuditor[]>
+
 export const DEFAULT_COLOR_CRITERIA: ColorCriteriaSettings = {
   building: {
     greenMin: 4.0,
@@ -139,4 +147,62 @@ export function evaluateColorGrade(
       levelKey: 'RED'
     }
   }
+}
+
+export async function getBuildingAuditorsMap(): Promise<BuildingAuditorsMap> {
+  const ready = await isDbReady()
+  if (!ready) return {}
+
+  try {
+    const rec = await (prisma as any).systemSetting.findUnique({
+      where: { key: 'building_auditors' }
+    })
+    if (rec && rec.value) {
+      const parsed = JSON.parse(rec.value)
+      if (parsed && typeof parsed === 'object') {
+        return parsed as BuildingAuditorsMap
+      }
+    }
+    return {}
+  } catch (err) {
+    console.error('Error fetching building_auditors from DB:', err)
+    return {}
+  }
+}
+
+export async function saveBuildingAuditors(
+  buildingId: string,
+  auditors: AssignedAuditor[]
+): Promise<AssignedAuditor[]> {
+  await requireDatabase()
+
+  const currentMap = await getBuildingAuditorsMap()
+  const cleaned: AssignedAuditor[] = []
+  const seen = new Set<string>()
+
+  if (Array.isArray(auditors)) {
+    for (const a of auditors) {
+      if (!a || (!a.userlogin && !a.fullName)) continue
+      const login = (a.userlogin || '').trim()
+      const name = (a.fullName || '').trim()
+      const key = (a.userId || login || name).toLowerCase()
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      cleaned.push({
+        userId: a.userId || undefined,
+        userlogin: login,
+        fullName: name || login
+      })
+    }
+  }
+
+  currentMap[buildingId] = cleaned
+
+  await (prisma as any).systemSetting.upsert({
+    where: { key: 'building_auditors' },
+    update: { value: JSON.stringify(currentMap) },
+    create: { key: 'building_auditors', value: JSON.stringify(currentMap) }
+  })
+
+  return cleaned
 }
