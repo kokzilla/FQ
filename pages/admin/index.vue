@@ -522,6 +522,21 @@
                   (ยังไม่ได้ระบุแม่บ้าน)
                 </span>
               </div>
+
+              <!-- Assigned Committee Auditors Chips -->
+              <div class="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 pt-0.5">
+                <span class="font-medium text-slate-500">คณะกรรมการประจำอาคาร:</span>
+                <span
+                  v-for="(aud, aIdx) in (b.auditors || [])"
+                  :key="aud.userlogin || aud.userId || aIdx"
+                  class="inline-flex items-center bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg font-medium text-xs border border-emerald-200/80"
+                >
+                  📋 {{ aud.fullName }}
+                </span>
+                <span v-if="!b.auditors || b.auditors.length === 0" class="text-slate-400 italic text-xs">
+                  (ยังไม่ได้กำหนดกรรมการประจำอาคาร)
+                </span>
+              </div>
             </div>
 
             <div class="flex items-center space-x-2 self-end sm:self-center flex-shrink-0">
@@ -1088,6 +1103,7 @@
                       <span class="text-[10px] text-slate-400">{{ reportSortBy.startsWith('score') ? (reportSortBy === 'score_desc' ? '▼' : '▲') : '↕' }}</span>
                     </div>
                   </th>
+                  <th class="py-3 px-4 text-center whitespace-nowrap">จัดการ</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 text-slate-700">
@@ -1117,10 +1133,20 @@
                       {{ getAssessmentAverageScore(item).toFixed(2) }}
                     </span>
                   </td>
+                  <td class="py-3 px-4 text-center whitespace-nowrap">
+                    <button
+                      type="button"
+                      @click="deleteReportAssessment(item)"
+                      class="px-2.5 py-1 rounded-lg text-xs font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80 transition-colors cursor-pointer"
+                      title="ลบผลการประเมินนี้"
+                    >
+                      🗑️ ลบ
+                    </button>
+                  </td>
                 </tr>
 
                 <tr v-if="filteredReportAssessments.length === 0">
-                  <td colspan="6" class="py-12 text-center text-slate-400 space-y-1">
+                  <td colspan="7" class="py-12 text-center text-slate-400 space-y-1">
                     <p class="text-base">📋</p>
                     <p class="text-xs font-medium">ไม่พบข้อมูลผลการตรวจประเมินที่ตรงตามเงื่อนไข</p>
                   </td>
@@ -1450,6 +1476,78 @@
               </p>
             </div>
 
+            <!-- COMMITTEE AUDITORS PICKER FOR ADD -->
+            <div class="border-t border-slate-100 pt-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-semibold text-slate-800">
+                  คณะกรรมการผู้ตรวจประเมินประจำอาคาร (เลือกได้หลายท่าน)
+                </label>
+                <span class="text-[11px] text-emerald-600 font-medium">
+                  เลือกแล้ว {{ newBuildingAuditors.length }} ท่าน
+                </span>
+              </div>
+
+              <!-- Search Input for Committee -->
+              <div class="relative">
+                <input
+                  v-model="newAuditorSearchQuery"
+                  type="text"
+                  placeholder="พิมพ์ค้นหาชื่อกรรมการ หรือ username..."
+                  class="w-full text-xs px-3 py-2 pl-8 pr-7 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
+                <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
+                <button
+                  v-if="newAuditorSearchQuery"
+                  type="button"
+                  @click="newAuditorSearchQuery = ''"
+                  class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs w-4 h-4 rounded-full flex items-center justify-center"
+                >✕</button>
+              </div>
+
+              <!-- Selected Auditor Chips -->
+              <div v-if="newBuildingAuditors.length > 0" class="flex flex-wrap gap-1.5 p-2 bg-emerald-50/40 rounded-xl border border-emerald-200/70">
+                <span
+                  v-for="(aud, aIdx) in newBuildingAuditors"
+                  :key="aud.userlogin || aud.userId || aIdx"
+                  class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-emerald-100/80 border border-emerald-200 text-emerald-800 text-xs font-medium"
+                >
+                  <span>📋 {{ aud.fullName }}</span>
+                  <button
+                    type="button"
+                    @click="newBuildingAuditors.splice(aIdx, 1)"
+                    class="text-emerald-500 hover:text-rose-600 transition-colors ml-1 font-bold"
+                  >
+                    ✕
+                  </button>
+                </span>
+              </div>
+
+              <!-- Quick Toggle List of Committee Members -->
+              <div class="max-h-40 overflow-y-auto border border-slate-200 rounded-xl p-2 bg-slate-50/50 space-y-1">
+                <div
+                  v-for="aud in filteredCommitteeUsersForNew"
+                  :key="aud.id || aud.userlogin"
+                  @click="toggleAuditorForNewBuilding(aud)"
+                  class="px-2.5 py-1.5 rounded-lg text-xs cursor-pointer flex items-center justify-between transition-colors"
+                  :class="isAuditorSelected(newBuildingAuditors, aud)
+                    ? 'bg-emerald-600 text-white font-semibold'
+                    : 'bg-white hover:bg-emerald-50 text-slate-700 border border-slate-200/60'"
+                >
+                  <div class="flex items-center space-x-1.5 truncate">
+                    <span>{{ isAuditorSelected(newBuildingAuditors, aud) ? '✓' : '＋' }}</span>
+                    <span class="truncate">{{ aud.fullName }}</span>
+                    <span class="text-[10px] opacity-75 font-mono">({{ aud.userlogin }})</span>
+                  </div>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded" :class="isAuditorSelected(newBuildingAuditors, aud) ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-100 text-slate-500'">
+                    {{ aud.role === 'ADMIN' ? 'Admin' : 'กรรมการ' }}
+                  </span>
+                </div>
+                <div v-if="filteredCommitteeUsersForNew.length === 0" class="text-center text-xs text-slate-400 py-2">
+                  {{ newAuditorSearchQuery ? `ไม่พบกรรมการที่ตรงกับ "${newAuditorSearchQuery}"` : 'ยังไม่มีรายชื่อกรรมการในระบบ (สามารถเพิ่มได้ที่แท็บ 2)' }}
+                </div>
+              </div>
+            </div>
+
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
               <button
                 type="button"
@@ -1616,6 +1714,81 @@
               <p class="text-[11px] text-slate-400">
                 💡 สามารถเลือกจากรายชื่อ SSO หรือพิมพ์ชื่อแม่บ้าน Outsource เองแล้วกด Enter ได้ทันที
               </p>
+            </div>
+
+            <!-- COMMITTEE AUDITORS PICKER FOR EDIT -->
+            <div class="border-t border-slate-100 pt-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-semibold text-slate-800">
+                  คณะกรรมการผู้ตรวจประเมินประจำอาคาร (เลือกได้หลายท่าน)
+                </label>
+                <span class="text-[11px] text-emerald-600 font-medium">
+                  เลือกแล้ว {{ editBuildingAuditors.length }} ท่าน
+                </span>
+              </div>
+
+              <!-- Search Input for Committee in Edit Modal -->
+              <div class="relative">
+                <input
+                  v-model="editAuditorSearchQuery"
+                  type="text"
+                  placeholder="พิมพ์ค้นหาชื่อกรรมการ หรือ username..."
+                  class="w-full text-xs px-3 py-2 pl-8 pr-7 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
+                <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
+                <button
+                  v-if="editAuditorSearchQuery"
+                  type="button"
+                  @click="editAuditorSearchQuery = ''"
+                  class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs w-4 h-4 rounded-full flex items-center justify-center"
+                >✕</button>
+              </div>
+
+              <!-- Selected Auditor Chips -->
+              <div v-if="editBuildingAuditors.length > 0" class="flex flex-wrap gap-1.5 p-2 bg-emerald-50/40 rounded-xl border border-emerald-200/70">
+                <span
+                  v-for="(aud, aIdx) in editBuildingAuditors"
+                  :key="aud.userlogin || aud.userId || aIdx"
+                  class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-emerald-100/80 border border-emerald-200 text-emerald-800 text-xs font-medium"
+                >
+                  <span>📋 {{ aud.fullName }}</span>
+                  <button
+                    type="button"
+                    @click="editBuildingAuditors.splice(aIdx, 1)"
+                    class="text-emerald-500 hover:text-rose-600 transition-colors ml-1 font-bold"
+                  >
+                    ✕
+                  </button>
+                </span>
+              </div>
+              <div v-else class="text-xs text-slate-400 italic py-1">
+                ยังไม่ได้กำหนดกรรมการประจำอาคารนี้
+              </div>
+
+              <!-- Quick Toggle List of Committee Members -->
+              <div class="max-h-40 overflow-y-auto border border-slate-200 rounded-xl p-2 bg-slate-50/50 space-y-1">
+                <div
+                  v-for="aud in filteredCommitteeUsersForEdit"
+                  :key="aud.id || aud.userlogin"
+                  @click="toggleAuditorForEditBuilding(aud)"
+                  class="px-2.5 py-1.5 rounded-lg text-xs cursor-pointer flex items-center justify-between transition-colors"
+                  :class="isAuditorSelected(editBuildingAuditors, aud)
+                    ? 'bg-emerald-600 text-white font-semibold'
+                    : 'bg-white hover:bg-emerald-50 text-slate-700 border border-slate-200/60'"
+                >
+                  <div class="flex items-center space-x-1.5 truncate">
+                    <span>{{ isAuditorSelected(editBuildingAuditors, aud) ? '✓' : '＋' }}</span>
+                    <span class="truncate">{{ aud.fullName }}</span>
+                    <span class="text-[10px] opacity-75 font-mono">({{ aud.userlogin }})</span>
+                  </div>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded" :class="isAuditorSelected(editBuildingAuditors, aud) ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-100 text-slate-500'">
+                    {{ aud.role === 'ADMIN' ? 'Admin' : 'กรรมการ' }}
+                  </span>
+                </div>
+                <div v-if="filteredCommitteeUsersForEdit.length === 0" class="text-center text-xs text-slate-400 py-2">
+                  {{ editAuditorSearchQuery ? `ไม่พบกรรมการที่ตรงกับ "${editAuditorSearchQuery}"` : 'ยังไม่มีรายชื่อกรรมการในระบบ (สามารถเพิ่มได้ที่แท็บ 2)' }}
+                </div>
+              </div>
             </div>
 
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
@@ -2291,7 +2464,12 @@ const filteredBuildings = computed(() => {
       return String(sName).toLowerCase().includes(q) || String(sLogin).toLowerCase().includes(q)
     })
 
-    return nameMatch || codeMatch || descMatch || responsibleStaffMatch || staffMatch
+    // 3. Check assigned committee auditors
+    const auditorMatch = Array.isArray(b.auditors) && b.auditors.some((a: any) => {
+      return String(a.fullName || '').toLowerCase().includes(q) || String(a.userlogin || '').toLowerCase().includes(q)
+    })
+
+    return nameMatch || codeMatch || descMatch || responsibleStaffMatch || staffMatch || auditorMatch
   })
 })
 const showAddBuildingModal = ref(false)
@@ -2301,14 +2479,73 @@ const staffPool = ref<{ staffName: string; source: string }[]>([])
 // Add Building State
 const newBuilding = reactive({ code: '', name: '', floors: 1, description: '' })
 const newBuildingStaffList = ref<string[]>([])
+const newBuildingAuditors = ref<{ userId?: string; userlogin: string; fullName: string }[]>([])
+const newAuditorSearchQuery = ref('')
 const newStaffQuery = ref('')
 const newStaffSsoSuggestions = ref<any[]>([])
 
 // Edit Building State
 const editBuildingForm = reactive({ id: '', code: '', name: '', floors: 1, description: '' })
 const editBuildingStaffList = ref<string[]>([])
+const editBuildingAuditors = ref<{ userId?: string; userlogin: string; fullName: string }[]>([])
+const editAuditorSearchQuery = ref('')
 const editStaffQuery = ref('')
 const editStaffSsoSuggestions = ref<any[]>([])
+
+const availableCommitteeUsers = computed(() => {
+  return appointedUsers.value.filter(u => u.role === 'AUDITOR' || u.role === 'ADMIN')
+})
+
+const filteredCommitteeUsersForNew = computed(() => {
+  const q = newAuditorSearchQuery.value.trim().toLowerCase()
+  if (!q) return availableCommitteeUsers.value
+  return availableCommitteeUsers.value.filter((u: any) =>
+    (u.fullName && String(u.fullName).toLowerCase().includes(q)) ||
+    (u.userlogin && String(u.userlogin).toLowerCase().includes(q)) ||
+    (u.positionName && String(u.positionName).toLowerCase().includes(q))
+  )
+})
+
+const filteredCommitteeUsersForEdit = computed(() => {
+  const q = editAuditorSearchQuery.value.trim().toLowerCase()
+  if (!q) return availableCommitteeUsers.value
+  return availableCommitteeUsers.value.filter((u: any) =>
+    (u.fullName && String(u.fullName).toLowerCase().includes(q)) ||
+    (u.userlogin && String(u.userlogin).toLowerCase().includes(q)) ||
+    (u.positionName && String(u.positionName).toLowerCase().includes(q))
+  )
+})
+
+function isAuditorSelected(list: { userId?: string; userlogin: string; fullName: string }[], aud: any): boolean {
+  return list.some(item =>
+    (item.userId && aud.id && item.userId === aud.id) ||
+    (item.userlogin && aud.userlogin && item.userlogin.toLowerCase() === aud.userlogin.toLowerCase())
+  )
+}
+
+function toggleAuditorInList(list: { userId?: string; userlogin: string; fullName: string }[], aud: any) {
+  const idx = list.findIndex(item =>
+    (item.userId && aud.id && item.userId === aud.id) ||
+    (item.userlogin && aud.userlogin && item.userlogin.toLowerCase() === aud.userlogin.toLowerCase())
+  )
+  if (idx >= 0) {
+    list.splice(idx, 1)
+  } else {
+    list.push({
+      userId: aud.id,
+      userlogin: aud.userlogin,
+      fullName: aud.fullName
+    })
+  }
+}
+
+function toggleAuditorForNewBuilding(aud: any) {
+  toggleAuditorInList(newBuildingAuditors.value, aud)
+}
+
+function toggleAuditorForEditBuilding(aud: any) {
+  toggleAuditorInList(editBuildingAuditors.value, aud)
+}
 
 // Filter DB pool for Add Building
 const filteredNewStaffPool = computed(() => {
@@ -2422,6 +2659,8 @@ function openAddBuildingModal() {
   newBuilding.floors = 1
   newBuilding.description = ''
   newBuildingStaffList.value = []
+  newBuildingAuditors.value = []
+  newAuditorSearchQuery.value = ''
   newStaffQuery.value = ''
   showAddBuildingModal.value = true
 }
@@ -2436,7 +2675,8 @@ async function saveNewBuilding() {
         name: newBuilding.name,
         floors: newBuilding.floors,
         description: newBuilding.description,
-        staffNames: newBuildingStaffList.value
+        staffNames: newBuildingStaffList.value,
+        auditors: newBuildingAuditors.value
       }
     })
     if (res?.ok) {
@@ -2457,6 +2697,14 @@ function openEditBuildingModal(b: any) {
   editBuildingForm.floors = b.floors || 1
   editBuildingForm.description = b.description || ''
   editBuildingStaffList.value = (b.staffs || []).map((s: any) => s.staffName)
+  editBuildingAuditors.value = Array.isArray(b.auditors)
+    ? b.auditors.map((a: any) => ({
+        userId: a.userId,
+        userlogin: a.userlogin,
+        fullName: a.fullName
+      }))
+    : []
+  editAuditorSearchQuery.value = ''
   editStaffQuery.value = ''
   showEditBuildingModal.value = true
 }
@@ -2471,7 +2719,8 @@ async function updateBuilding() {
         name: editBuildingForm.name,
         floors: editBuildingForm.floors,
         description: editBuildingForm.description,
-        staffNames: editBuildingStaffList.value
+        staffNames: editBuildingStaffList.value,
+        auditors: editBuildingAuditors.value
       }
     })
     if (res?.ok) {
@@ -2606,6 +2855,28 @@ async function fetchReportAssessments() {
     console.error('Failed to fetch evaluation report data', err)
   } finally {
     isLoadingReports.value = false
+  }
+}
+
+async function deleteReportAssessment(item: any) {
+  if (!item?.id) return
+  const staffDisplay = formatReportDisplayName(item.responsibleStaffText)
+  const assessorDisplay = formatReportDisplayName(item.assessor?.fullName || item.assessorName)
+  const buildingDisplay = item.building?.name || item.buildingName || 'อาคาร'
+  if (!confirm(`ยืนยันการลบผลการประเมินของ "${staffDisplay}" (${buildingDisplay})\nโดยผู้ประเมิน: ${assessorDisplay} ใช่หรือไม่?`)) {
+    return
+  }
+
+  try {
+    const res: any = await $fetch(`/api/assessments/${item.id}`, {
+      method: 'DELETE'
+    })
+    if (res?.ok) {
+      showToast('ลบผลการประเมินเรียบร้อยแล้ว')
+      await fetchReportAssessments()
+    }
+  } catch (err: any) {
+    showToast(err?.data?.message || err?.message || 'ไม่สามารถลบผลการประเมินได้', 'error')
   }
 }
 

@@ -22,7 +22,7 @@
     </div>
 
     <!-- Scoring Button Group (Thumb friendly touch target) -->
-    <div class="grid grid-cols-6 gap-1.5 sm:gap-2 pt-1">
+    <div class="grid grid-cols-5 gap-1.5 sm:gap-2 pt-1">
       <button
         v-for="val in [1, 2, 3, 4, 5]"
         :key="val"
@@ -34,17 +34,6 @@
         <span>{{ val }}</span>
         <span class="text-[9px] font-normal opacity-80">{{ getScoreSublabel(val) }}</span>
       </button>
-
-      <!-- N/A Button -->
-      <button
-        type="button"
-        @click="selectNA"
-        class="h-11 sm:h-12 rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all active:scale-95 border"
-        :class="isNA ? 'bg-slate-800 text-white border-slate-800 shadow-sm' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'"
-      >
-        <span>N/A</span>
-        <span class="text-[9px] font-normal opacity-70">ไม่คิด</span>
-      </button>
     </div>
 
     <!-- Inline Expansion for Defect & Photo Upload (Auto-shows when score is 1, 2, or 3) -->
@@ -54,7 +43,7 @@
     >
       <div class="flex items-center justify-between">
         <label class="text-xs font-medium text-slate-700">
-          ระบุข้อบกพร่องที่พบ <span v-if="score && score <= 3" class="text-rose-500 font-bold">*</span>
+          ระบุข้อบกพร่องที่พบ (ถ้ามี)
         </label>
         <label class="cursor-pointer text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center space-x-1">
           <span>📷 แนบภาพถ่าย</span>

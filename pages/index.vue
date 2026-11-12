@@ -21,73 +21,171 @@
         </div>
       </div>
 
-      <!-- Quick Metrics Summary (6 Grid Columns) -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        <!-- Grid 1: อาคารที่ตรวจแล้ว / อาคารทั้งหมด -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
-          <p class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-none text-center">
-            {{ evaluatedBuildingsCount }}/{{ totalBuildingsCount }}
-          </p>
-          <span class="text-xs text-slate-500 font-medium mt-1.5 leading-snug text-center">อาคารที่ตรวจแล้ว</span>
-        </div>
-
-        <!-- Grid 2: บุคลากรที่ประเมินแล้ว / บุคลากรทั้งหมด -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
-          <p class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-none text-center">
-            {{ evaluatedStaffCount }}/{{ totalStaffCount }}
-          </p>
-          <span class="text-xs text-slate-500 font-medium mt-1.5 leading-snug text-center">บุคลากรที่ประเมินแล้ว</span>
-        </div>
-
-        <!-- Grid 3: คะแนนเฉลี่ยรวม -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
-          <p class="text-2xl sm:text-3xl font-extrabold text-indigo-600 tracking-tight leading-none text-center">
-            {{ averageScore }} <span class="text-xs font-medium text-slate-400">/ 5.00</span>
-          </p>
-          <span class="text-xs text-slate-500 font-medium mt-1.5 leading-snug text-center">คะแนนเฉลี่ยรวม</span>
-        </div>
-
-        <!-- Grid 4: ระดับสีเขียว -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
-          <p class="text-2xl sm:text-3xl font-extrabold text-emerald-600 tracking-tight leading-none text-center">
-            {{ greenBuildingCount }}
-          </p>
-          <span class="text-xs text-emerald-700 font-medium mt-1.5 leading-snug text-center">ระดับสีเขียว</span>
-        </div>
-
-        <!-- Grid 5: ระดับสีเหลือง แทรกระหว่างเขียวกับแดง -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
-          <p class="text-2xl sm:text-3xl font-extrabold text-amber-500 tracking-tight leading-none text-center">
-            {{ yellowBuildingCount }}
-          </p>
-          <span class="text-xs text-amber-700 font-medium mt-1.5 leading-snug text-center">ระดับสีเหลือง</span>
-        </div>
-
-        <!-- Grid 6: ระดับสีแดง -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
-          <p class="text-2xl sm:text-3xl font-extrabold text-rose-600 tracking-tight leading-none text-center">
-            {{ redBuildingCount }}
-          </p>
-          <span class="text-xs text-rose-700 font-medium mt-1.5 leading-snug text-center">ระดับสีแดง</span>
-        </div>
-      </div>
-
-      <!-- Assessor Statistics Bar (สถิติของผู้ประเมิน) -->
-      <div class="bg-indigo-50/70 border border-indigo-100/90 rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-2.5 text-xs sm:text-sm shadow-xs">
-        <div class="flex items-center space-x-2 text-slate-800">
-          <span class="text-base">📋</span>
-          <span class="font-semibold text-slate-900">สถิติการตรวจของคุณ {{ userSession?.fullName || 'ผู้ตรวจประเมิน' }}:</span>
-        </div>
-        <div class="flex items-center space-x-3 sm:space-x-4 text-slate-700">
-          <div>
-            อาคารที่ตรวจแล้ว: <span class="font-bold text-indigo-700 text-sm sm:text-base">{{ myEvaluatedBuildingsCount }}</span> <span class="text-slate-500 text-xs">อาคาร</span>
+      <!-- Assessor Statistics Section (สถิติการตรวจของคุณ - แสดงเด่นชัดเหมือนสถิติรวม) -->
+      <section class="space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
+              👤
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h3 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                  สถิติการตรวจของคุณ {{ userSession?.fullName || 'ผู้ตรวจประเมิน' }}
+                </h3>
+                <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  สถิติส่วนบุคคล
+                </span>
+              </div>
+              <p class="text-xs text-slate-500">ความคืบหน้าการตรวจประเมินอาคารและบุคลากรในความรับผิดชอบของคุณ</p>
+            </div>
           </div>
-          <span class="text-slate-300">•</span>
-          <div>
-            บุคลากรที่ประเมินแล้ว: <span class="font-bold text-indigo-700 text-sm sm:text-base">{{ myEvaluatedStaffCount }}</span> <span class="text-slate-500 text-xs">คน</span>
+          <NuxtLink
+            to="/evaluate"
+            class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold text-xs shadow-sm transition-all flex items-center space-x-1.5 self-start sm:self-auto cursor-pointer"
+          >
+            <span>📝</span>
+            <span>ไปที่หน้าตรวจประเมิน</span>
+          </NuxtLink>
+        </div>
+
+        <!-- Metric Cards for Assessor (การ์ดเด่นชัดสไตล์เดียวกับสถิติรวม) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <!-- Card 1: อาคารที่ตรวจแล้ว -->
+          <div class="bg-gradient-to-br from-indigo-50/90 via-white to-white p-4 sm:p-5 rounded-2xl border border-indigo-200/90 shadow-sm flex flex-col justify-between space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                <span>🏢</span>
+                <span>อาคารที่ตรวจแล้ว</span>
+              </span>
+              <span
+                class="text-[11px] font-extrabold px-2 py-0.5 rounded-full border"
+                :class="myAssignedBuildingsCount > 0 && myEvaluatedBuildingsCount >= myAssignedBuildingsCount
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                  : 'bg-indigo-100 text-indigo-800 border-indigo-200'"
+              >
+                {{ myAssignedBuildingsCount > 0 ? Math.round((myEvaluatedBuildingsCount / myAssignedBuildingsCount) * 100) : 0 }}%
+              </span>
+            </div>
+            <p class="text-2xl sm:text-3xl font-extrabold text-indigo-900 tracking-tight leading-none">
+              {{ myEvaluatedBuildingsCount }} <span class="text-sm sm:text-base font-semibold text-slate-400">/ {{ myAssignedBuildingsCount }} อาคาร</span>
+            </p>
+            <p class="text-[11px] text-slate-500 leading-snug">
+              {{ myAssignedBuildingsCount > 0 && myEvaluatedBuildingsCount >= myAssignedBuildingsCount
+                ? '🎉 ตรวจครบทุกอาคารที่รับผิดชอบแล้ว'
+                : `คงเหลือ ${Math.max(0, myAssignedBuildingsCount - myEvaluatedBuildingsCount)} อาคารที่ยังตรวจไม่ครบ` }}
+            </p>
+          </div>
+
+          <!-- Card 2: บุคลากรที่ประเมินแล้ว -->
+          <div class="bg-gradient-to-br from-purple-50/90 via-white to-white p-4 sm:p-5 rounded-2xl border border-purple-200/90 shadow-sm flex flex-col justify-between space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+                <span>🧹</span>
+                <span>บุคลากรที่ประเมินแล้ว</span>
+              </span>
+              <span
+                class="text-[11px] font-extrabold px-2 py-0.5 rounded-full border"
+                :class="myAssignedStaffCount > 0 && myEvaluatedStaffCount >= myAssignedStaffCount
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                  : 'bg-purple-100 text-purple-800 border-purple-200'"
+              >
+                {{ myAssignedStaffCount > 0 ? Math.round((myEvaluatedStaffCount / myAssignedStaffCount) * 100) : 0 }}%
+              </span>
+            </div>
+            <p class="text-2xl sm:text-3xl font-extrabold text-purple-900 tracking-tight leading-none">
+              {{ myEvaluatedStaffCount }} <span class="text-sm sm:text-base font-semibold text-slate-400">/ {{ myAssignedStaffCount }} คน</span>
+            </p>
+            <p class="text-[11px] text-slate-500 leading-snug">
+              {{ myAssignedStaffCount > 0 && myEvaluatedStaffCount >= myAssignedStaffCount
+                ? '🎉 ประเมินครบทุกคนในความรับผิดชอบแล้ว'
+                : `คงเหลือ ${Math.max(0, myAssignedStaffCount - myEvaluatedStaffCount)} คนที่ยังไม่ได้ประเมิน` }}
+            </p>
+          </div>
+
+          <!-- Card 3: รายการที่ส่งผลประเมินแล้ว -->
+          <div class="bg-gradient-to-br from-emerald-50/90 via-white to-white p-4 sm:p-5 rounded-2xl border border-emerald-200/90 shadow-sm flex flex-col justify-between space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                <span>📋</span>
+                <span>รายการที่ส่งผลประเมินแล้ว</span>
+              </span>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                รอบนี้
+              </span>
+            </div>
+            <p class="text-2xl sm:text-3xl font-extrabold text-emerald-900 tracking-tight leading-none">
+              {{ myEvaluations.length }} <span class="text-sm sm:text-base font-semibold text-slate-400">รายการ</span>
+            </p>
+            <p class="text-[11px] text-slate-500 leading-snug">
+              บันทึกและส่งผลการตรวจประเมินในรอบปัจจุบันเรียบร้อยแล้ว
+            </p>
           </div>
         </div>
-      </div>
+      </section>
+
+      <!-- Overall Metrics Summary (สถิติการตรวจรวม - ภาพรวมทั้งมหาวิทยาลัย) -->
+      <section class="space-y-3 pt-2">
+        <div class="flex items-center space-x-2.5 pb-1">
+          <div class="w-9 h-9 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold text-base shadow-sm">
+            🏛️
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h3 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                สถิติการตรวจรวม (ภาพรวมทั้งมหาวิทยาลัย)
+              </h3>
+              <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                ข้อมูลภาพรวม
+              </span>
+            </div>
+            <p class="text-xs text-slate-500">สรุปความคืบหน้าและผลประเมินของทุกอาคารและบุคลากรทั้งหมดในรอบนี้</p>
+          </div>
+        </div>
+
+        <!-- 5 Grid Columns สำหรับสถิติรวม -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <!-- Grid 1: อาคารที่ตรวจแล้ว / อาคารทั้งหมด -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
+            <p class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-none text-center">
+              {{ evaluatedBuildingsCount }}/{{ totalBuildingsCount }}
+            </p>
+            <span class="text-xs text-slate-500 font-medium mt-1.5 leading-snug text-center">อาคารที่ตรวจแล้ว</span>
+          </div>
+
+          <!-- Grid 2: บุคลากรที่ประเมินแล้ว / บุคลากรทั้งหมด -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
+            <p class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-none text-center">
+              {{ evaluatedStaffCount }}/{{ totalStaffCount }}
+            </p>
+            <span class="text-xs text-slate-500 font-medium mt-1.5 leading-snug text-center">บุคลากรที่ประเมินแล้ว</span>
+          </div>
+
+          <!-- Grid 3: ระดับสีเขียว -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
+            <p class="text-2xl sm:text-3xl font-extrabold text-emerald-600 tracking-tight leading-none text-center">
+              {{ greenBuildingCount }}
+            </p>
+            <span class="text-xs text-emerald-700 font-medium mt-1.5 leading-snug text-center">ระดับสีเขียว</span>
+          </div>
+
+          <!-- Grid 4: ระดับสีเหลือง แทรกระหว่างเขียวกับแดง -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
+            <p class="text-2xl sm:text-3xl font-extrabold text-amber-500 tracking-tight leading-none text-center">
+              {{ yellowBuildingCount }}
+            </p>
+            <span class="text-xs text-amber-700 font-medium mt-1.5 leading-snug text-center">ระดับสีเหลือง</span>
+          </div>
+
+          <!-- Grid 5: ระดับสีแดง -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center text-center">
+            <p class="text-2xl sm:text-3xl font-extrabold text-rose-600 tracking-tight leading-none text-center">
+              {{ redBuildingCount }}
+            </p>
+            <span class="text-xs text-rose-700 font-medium mt-1.5 leading-snug text-center">ระดับสีแดง</span>
+          </div>
+        </div>
+      </section>
 
       <!-- Top 3 Leaders Section (Separated: Buildings and Personnel) -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -184,47 +282,86 @@
         </section>
       </div>
 
-      <!-- Recent Evaluations Section (Compact & Minimal) -->
+      <!-- My Evaluated List in Current Round -->
       <div class="space-y-3">
         <div class="flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-slate-800">รายการประเมินล่าสุด</h3>
-          <span class="text-xs text-slate-400">{{ latestRoundAssessments.length }} รายการ (รอบล่าสุด)</span>
+          <div class="flex items-center space-x-2">
+            <span class="text-base sm:text-lg">📋</span>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900">รายการที่คุณประเมินแล้วในรอบนี้</h3>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+            {{ myEvaluations.length }} รายการ (รอบล่าสุด)
+          </span>
         </div>
 
-        <div v-if="latestRoundAssessments.length === 0" class="bg-white rounded-2xl p-8 border border-slate-200/80 text-center space-y-2">
-          <p class="text-sm text-slate-500">ยังไม่มีบันทึกการประเมินในรอบนี้</p>
-          <NuxtLink to="/evaluate" class="text-xs font-semibold text-indigo-600 hover:underline">
-            กดที่นี่เพื่อเริ่มการตรวจครั้งแรก
-          </NuxtLink>
+        <div v-if="myEvaluations.length === 0" class="bg-white rounded-2xl p-8 border border-slate-200/80 text-center space-y-2 shadow-xs">
+          <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 text-xl">
+            📝
+          </div>
+          <p class="text-sm font-medium text-slate-600">คุณยังไม่มีรายการประเมินในรอบนี้</p>
+          <p class="text-xs text-slate-400">เลือกอาคารและบุคลากรที่คุณได้รับมอบหมายเพื่อเริ่มการประเมิน</p>
+          <div class="pt-2">
+            <NuxtLink to="/evaluate" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all">
+              <span>✍️</span> เริ่มการประเมินผล
+            </NuxtLink>
+          </div>
         </div>
 
-        <!-- Compact evaluation card list -->
-        <div v-else class="space-y-2">
+        <!-- Evaluation Cards List with Edit & Delete -->
+        <div v-else class="space-y-2.5">
           <div
-            v-for="item in latestRoundAssessments"
+            v-for="item in myEvaluations"
             :key="item.id"
-            class="bg-white rounded-xl p-3 sm:px-4 sm:py-3 border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all flex items-center justify-between gap-3"
+            class="bg-white rounded-2xl p-3.5 sm:px-4 sm:py-3.5 border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
           >
-            <div class="space-y-0.5 min-w-0">
-              <h4 class="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                🏢 {{ item.buildingName || item.building?.name }}
-              </h4>
+            <div class="space-y-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h4 class="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                  🏢 {{ item.buildingName || item.building?.name }}
+                </h4>
+                <span class="text-[11px] text-slate-400 font-normal">
+                  📅 {{ formatDashboardDate(item.assessedAt || item.createdAt) }}
+                </span>
+              </div>
               <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] sm:text-xs text-slate-500">
-                <span>👤 ผู้ปฏิบัติงาน: <span class="text-slate-800 font-medium">{{ item.responsibleStaffText || '-' }}</span></span>
-                <span class="text-slate-300">•</span>
-                <span>📋 ผู้ประเมิน: <span class="text-slate-800 font-medium">{{ formatAssessorShort(item.assessorName || item.assessor?.fullName) }}</span></span>
+                <span>👤 ผู้ปฏิบัติงาน: <span class="text-slate-800 font-semibold">{{ formatStaffDisplayName(item.responsibleStaffText) || '-' }}</span></span>
               </div>
             </div>
 
-            <!-- Grade & Score Badge (Compact 0-5 scale) -->
-            <div class="text-right flex-shrink-0 flex items-center space-x-2">
-              <span class="text-sm sm:text-base font-bold text-slate-900">{{ getItemScore(item) }} / 5.00</span>
-              <span
-                class="inline-block px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold rounded-md whitespace-nowrap"
-                :class="getGradeClass(getItemScore(item))"
-              >
-                {{ getItemGradeLabel(getItemScore(item)) }}
-              </span>
+            <div class="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+              <!-- Score Badge -->
+              <div class="text-left sm:text-right flex-shrink-0 flex items-center space-x-2">
+                <span class="text-sm sm:text-base font-bold text-slate-900">{{ getItemScore(item) }} / 5.00</span>
+                <span
+                  class="inline-block px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold rounded-md whitespace-nowrap"
+                  :class="getGradeClass(getItemScore(item))"
+                >
+                  {{ getItemGradeLabel(getItemScore(item)) }}
+                </span>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex items-center space-x-1.5 flex-shrink-0">
+                <button
+                  type="button"
+                  @click="editEvaluationItem(item)"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition-colors"
+                  title="แก้ไขผลการประเมินนี้"
+                >
+                  <span>✏️</span>
+                  <span>แก้ไข</span>
+                </button>
+                <button
+                  type="button"
+                  @click="deleteEvaluationItem(item)"
+                  :disabled="isDeleting"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors disabled:opacity-50"
+                  title="ลบผลการประเมินนี้"
+                >
+                  <span>🗑️</span>
+                  <span>ลบ</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -260,7 +397,9 @@ const colorCriteria = reactive({
   }
 })
 
-onMounted(async () => {
+const isDeleting = ref(false)
+
+async function fetchDashboardData() {
   try {
     const [aRes, rRes, bRes, cRes]: any = await Promise.all([
       $fetch('/api/assessments'),
@@ -285,6 +424,10 @@ onMounted(async () => {
   } catch (err) {
     console.error('Failed to load dashboard data', err)
   }
+}
+
+onMounted(async () => {
+  await fetchDashboardData()
 })
 
 // Active / Latest Evaluation Round
@@ -471,6 +614,18 @@ const totalStaffCount = computed(() => {
   return Math.max(staffSet.size, evaluatedStaffCount.value)
 })
 
+function normalizePersonName(name?: string | null): string {
+  if (!name) return ''
+  let str = String(name).trim()
+  const prefixRegex = /^(?:ว่าที่\s*ร้อยตรี|ว่าที่\s*ร\.ต\.|ผศ\.\s*ดร\.|รศ\.\s*ดร\.|ศ\.\s*ดร\.|อาจารย์\s*ดร\.|อาจารย์\s*|ผศ\.|รศ\.|ศ\.|ดร\.|อ\.|นาย|นางสาว|นาง|น\.ส\.)\s*/i
+  let prev = ''
+  while (prev !== str) {
+    prev = str
+    str = str.replace(prefixRegex, '').trim()
+  }
+  return str.toLowerCase()
+}
+
 // Current logged-in assessor statistics
 const myEvaluations = computed(() => {
   if (!userSession.value) return []
@@ -488,25 +643,83 @@ const myEvaluations = computed(() => {
   })
 })
 
-const myEvaluatedBuildingsCount = computed(() => {
-  const bSet = new Set<string>()
-  for (const a of myEvaluations.value) {
-    const bId = a.buildingId || a.buildingName || a.building?.name
-    if (bId) bSet.add(bId)
+const myAssignedBuildings = computed(() => {
+  const session = userSession.value
+  if (!session) return []
+  const sId = session.id
+  const sLogin = (session.userlogin || '').trim().toLowerCase()
+  const sName = normalizePersonName(session.fullName || '')
+
+  const matched = buildings.value.filter((b: any) => {
+    if (!Array.isArray(b.auditors) || b.auditors.length === 0) return false
+    return b.auditors.some((aud: any) => {
+      if (sId && aud.userId && aud.userId === sId) return true
+      if (sLogin && aud.userlogin && String(aud.userlogin).trim().toLowerCase() === sLogin) return true
+      const aName = normalizePersonName(aud.fullName || '')
+      if (sName && aName && aName === sName) return true
+      return false
+    })
+  })
+
+  if (matched.length === 0 && session.role === 'ADMIN') {
+    return buildings.value
   }
-  return bSet.size
+  return matched
+})
+
+const myAssignedBuildingsCount = computed(() => {
+  return myAssignedBuildings.value.length
+})
+
+const myAssignedStaffCount = computed(() => {
+  let count = 0
+  for (const b of myAssignedBuildings.value) {
+    if (Array.isArray(b.staffs)) {
+      count += b.staffs.filter((s: any) => s.staffName && s.staffName.trim()).length
+    }
+  }
+  return count
+})
+
+function hasAssessorEvaluatedStaffInBuilding(b: any, staff: any): boolean {
+  const targetStaffName = normalizePersonName(staff.staffName)
+  return myEvaluations.value.some((ev: any) => {
+    const sameBuilding = ev.buildingId === b.id || (ev.buildingName || ev.building?.name) === b.name
+    if (!sameBuilding) return false
+    if (staff.id && ev.staffId && ev.staffId === staff.id) return true
+    if (targetStaffName && normalizePersonName(ev.responsibleStaffText) === targetStaffName) return true
+    return false
+  })
+}
+
+const myEvaluatedBuildingsCount = computed(() => {
+  if (myAssignedBuildings.value.length === 0) return 0
+  let completedCount = 0
+  for (const b of myAssignedBuildings.value) {
+    const validStaffs = Array.isArray(b.staffs) ? b.staffs.filter((s: any) => s.staffName && s.staffName.trim()) : []
+    if (validStaffs.length > 0) {
+      // นับว่าอาคารตรวจแล้วเมื่อประเมินผู้ปฏิบัติงานในอาคารนั้นครบทุกคน
+      const allEvaluated = validStaffs.every((s: any) => hasAssessorEvaluatedStaffInBuilding(b, s))
+      if (allEvaluated) completedCount++
+    } else {
+      const hasAnyEval = myEvaluations.value.some((ev: any) => ev.buildingId === b.id || (ev.buildingName || ev.building?.name) === b.name)
+      if (hasAnyEval) completedCount++
+    }
+  }
+  return completedCount
 })
 
 const myEvaluatedStaffCount = computed(() => {
-  const sSet = new Set<string>()
-  for (const a of myEvaluations.value) {
-    const bName = (a.buildingName || a.building?.name || '').trim()
-    const sName = (a.responsibleStaffText || '').trim()
-    if (sName) {
-      sSet.add(`${bName}___${sName}`)
+  let evaluatedCount = 0
+  for (const b of myAssignedBuildings.value) {
+    const validStaffs = Array.isArray(b.staffs) ? b.staffs.filter((s: any) => s.staffName && s.staffName.trim()) : []
+    for (const s of validStaffs) {
+      if (hasAssessorEvaluatedStaffInBuilding(b, s)) {
+        evaluatedCount++
+      }
     }
   }
-  return sSet.size
+  return evaluatedCount
 })
 
 const topThreePersonnel = computed(() => {
@@ -586,5 +799,69 @@ function getGradeClass(scoreStrOrGrade: string) {
   if (scoreStrOrGrade === 'FAIR' || scoreStrOrGrade?.includes('พอใช้')) return 'bg-amber-50 text-amber-800 border border-amber-200'
   if (scoreStrOrGrade === 'IMPROVEMENT' || scoreStrOrGrade === 'ต้องปรับปรุง') return 'bg-rose-50 text-rose-800 border border-rose-200'
   return 'bg-rose-50 text-rose-800 border border-rose-200'
+}
+
+function formatDashboardDate(dateStr?: string | null): string {
+  if (!dateStr) return '-'
+  try {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return String(dateStr)
+    return d.toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  } catch {
+    return String(dateStr)
+  }
+}
+
+function formatStaffDisplayName(fullName: string): string {
+  if (!fullName) return ''
+  let str = String(fullName).trim()
+  const prefixRegex = /^(?:ว่าที่\s*ร้อยตรี|ว่าที่\s*ร\.ต\.|ผศ\.\s*ดร\.|รศ\.\s*ดร\.|ศ\.\s*ดร\.|อาจารย์\s*ดร\.|อาจารย์\s*|ผศ\.|รศ\.|ศ\.|ดร\.|อ\.|นาย|นางสาว|นาง|น\.ส\.)\s*/i
+  let prev = ''
+  while (prev !== str) {
+    prev = str
+    str = str.replace(prefixRegex, '').trim()
+  }
+  return str
+}
+
+function editEvaluationItem(item: any) {
+  if (!item) return
+  navigateTo({
+    path: '/evaluate',
+    query: {
+      buildingId: item.buildingId,
+      staffId: item.staffId || '',
+      staffName: item.responsibleStaffText || '',
+      roundId: item.roundId || latestRound.value?.id || ''
+    }
+  })
+}
+
+async function deleteEvaluationItem(item: any) {
+  if (!item || !item.id) return
+  const staffName = formatStaffDisplayName(item.responsibleStaffText) || 'ผู้ปฏิบัติงาน'
+  const bldgName = item.buildingName || item.building?.name || 'อาคาร'
+  if (!confirm(`คุณต้องการลบผลการประเมินของ "${staffName}" (${bldgName}) ใช่หรือไม่?`)) {
+    return
+  }
+
+  isDeleting.value = true
+  try {
+    const res: any = await $fetch(`/api/assessments/${item.id}`, {
+      method: 'DELETE'
+    })
+    if (res?.ok) {
+      await fetchDashboardData()
+      alert('ลบผลการประเมินเรียบร้อยแล้ว')
+    }
+  } catch (err: any) {
+    alert(err?.data?.message || err?.message || 'เกิดข้อผิดพลาดในการลบผลการประเมิน')
+  } finally {
+    isDeleting.value = false
+  }
 }
 </script>

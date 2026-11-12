@@ -93,6 +93,48 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'ไม่พบบัญชีผู้ตรวจประเมินในฐานข้อมูล' })
   }
 
+  // 3.5 ตรวจสอบโควตาผู้ประเมินไม่เกิน 5 คนต่อผู้ปฏิบัติงาน 1 คนในรอบและอาคารเดียวกัน
+  const targetRoundId = roundId || 'round-2570'
+  const cleanStaffName = (name?: string | null) => {
+    if (!name) return ''
+    let str = String(name).trim()
+    const prefixRegex = /^(?:ว่าที่\s*ร้อยตรี|ว่าที่\s*ร\.ต\.|ผศ\.\s*ดร\.|รศ\.\s*ดร\.|ศ\.\s*ดร\.|อาจารย์\s*ดร\.|อาจารย์\s*|ผศ\.|รศ\.|ศ\.|ดร\.|อ\.|นาย|นางสาว|นาง|น\.ส\.)\s*/i
+    let prev = ''
+    while (prev !== str) {
+      prev = str
+      str = str.replace(prefixRegex, '').trim()
+    }
+    return str.toLowerCase()
+  }
+
+  const existingInBuilding = await prisma.assessment.findMany({
+    where: {
+      roundId: targetRoundId,
+      buildingId: actualBuildingId
+    },
+    select: {
+      id: true,
+      assessorId: true,
+      staffId: true,
+      responsibleStaffText: true
+    }
+  })
+
+  const targetCleanedName = cleanStaffName(responsibleStaffText)
+  const matchingStaffAssessments = existingInBuilding.filter((a) => {
+    if (staffId && a.staffId && a.staffId === staffId) return true
+    if (targetCleanedName && cleanStaffName(a.responsibleStaffText) === targetCleanedName) return true
+    return false
+  })
+
+  const uniqueAssessorIds = new Set(matchingStaffAssessments.map(a => a.assessorId))
+  if (uniqueAssessorIds.size >= 5 && !uniqueAssessorIds.has(actualAssessorId)) {
+    throw createError({
+      statusCode: 400,
+      message: 'ผู้ปฏิบัติงานท่านนี้ได้รับการประเมินครบ 5 คนแล้วในรอบนี้ ไม่สามารถประเมินเพิ่มได้'
+    })
+  }
+
   // 4. บันทึกลง PostgreSQL พร้อม ScoreItem ทุกข้อ
   try {
     const saved = await prisma.assessment.create({

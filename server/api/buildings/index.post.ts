@@ -1,12 +1,13 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { requireDatabase } from '../../utils/dbState'
+import { saveBuildingAuditors } from '../../utils/settings'
 
 export default defineEventHandler(async (event) => {
   await requireDatabase()
 
   const body = await readBody(event)
-  const { code, name, floors, description, staffNames } = body
+  const { code, name, floors, description, staffNames, auditors } = body
 
   if (!code || !name) {
     throw createError({ statusCode: 400, message: 'กรุณาระบุรหัสอาคารและชื่ออาคาร' })
@@ -27,7 +28,18 @@ export default defineEventHandler(async (event) => {
       },
       include: { staffs: true }
     })
-    return { ok: true, data: building }
+
+    const savedAuditors = Array.isArray(auditors)
+      ? await saveBuildingAuditors(building.id, auditors)
+      : []
+
+    return {
+      ok: true,
+      data: {
+        ...building,
+        auditors: savedAuditors
+      }
+    }
   } catch (err: any) {
     throw createError({
       statusCode: 500,

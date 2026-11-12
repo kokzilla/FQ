@@ -1,22 +1,31 @@
 import { defineEventHandler, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { requireDatabase } from '../../utils/dbState'
+import { getBuildingAuditorsMap } from '../../utils/settings'
 
 export default defineEventHandler(async () => {
   await requireDatabase()
 
   try {
-    const buildings = await prisma.building.findMany({
-      where: { isActive: true },
-      include: {
-        staffs: {
-          include: { user: true }
-        }
-      },
-      orderBy: { code: 'asc' }
-    })
+    const [buildings, auditorsMap] = await Promise.all([
+      prisma.building.findMany({
+        where: { isActive: true },
+        include: {
+          staffs: {
+            include: { user: true }
+          }
+        },
+        orderBy: { code: 'asc' }
+      }),
+      getBuildingAuditorsMap()
+    ])
 
-    return { ok: true, data: buildings }
+    const enriched = buildings.map(b => ({
+      ...b,
+      auditors: auditorsMap[b.id] || []
+    }))
+
+    return { ok: true, data: enriched }
   } catch (err: any) {
     throw createError({
       statusCode: 500,

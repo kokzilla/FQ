@@ -6,7 +6,6 @@
           <span class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">ความคืบหน้า</span>
           <span class="text-sm font-semibold text-slate-800">
             {{ evaluatedCount }}/{{ totalCount }} ข้อ
-            <span v-if="naCount > 0" class="text-xs text-slate-400 font-normal">({{ naCount }} N/A)</span>
           </span>
         </div>
 

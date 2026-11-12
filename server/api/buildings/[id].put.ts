@@ -1,13 +1,14 @@
 import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { requireDatabase } from '../../utils/dbState'
+import { getBuildingAuditorsMap, saveBuildingAuditors } from '../../utils/settings'
 
 export default defineEventHandler(async (event) => {
   await requireDatabase()
 
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
-  const { code, name, floors, description, staffNames } = body
+  const { code, name, floors, description, staffNames, auditors } = body
 
   if (!id) {
     throw createError({ statusCode: 400, message: 'Missing building id' })
@@ -49,12 +50,26 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    let finalAuditors = []
+    if (Array.isArray(auditors)) {
+      finalAuditors = await saveBuildingAuditors(id, auditors)
+    } else {
+      const map = await getBuildingAuditorsMap()
+      finalAuditors = map[id] || []
+    }
+
     const finalBuilding = await prisma.building.findUnique({
       where: { id },
       include: { staffs: true }
     })
 
-    return { ok: true, data: finalBuilding }
+    return {
+      ok: true,
+      data: {
+        ...finalBuilding,
+        auditors: finalAuditors
+      }
+    }
   } catch (err: any) {
     throw createError({
       statusCode: err.statusCode || 500,
