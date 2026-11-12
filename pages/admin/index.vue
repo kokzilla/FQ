@@ -16,41 +16,78 @@
 
       <!-- Quick Evaluator Impersonation Card -->
       <section class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-md border border-indigo-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="space-y-1">
-          <div class="flex items-center space-x-2">
-            <span class="text-xl">🎭</span>
-            <h3 class="font-bold text-sm sm:text-base text-white">สวมบทบาทเป็นผู้ประเมิน (Impersonate Evaluator)</h3>
-            <span class="bg-amber-400/20 text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-amber-400/30">
-              ดูหน้าจอผู้ประเมิน
-            </span>
-          </div>
-          <p class="text-xs text-indigo-200">
-            เลือกรายชื่อผู้ประเมินเพื่อสวมบทบาท ดูหน้าจอและมุมมองการตรวจประเมินเสมือนเป็นกรรมการท่านนั้นจริง
-          </p>
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">🎭</span>
+          <h3 class="font-bold text-sm sm:text-base text-white">สวมบทบาทเป็นผู้ประเมิน</h3>
+          <span class="bg-amber-400/20 text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-amber-400/30">
+            ดูหน้าจอผู้ประเมิน
+          </span>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2 shrink-0">
-          <select
-            v-model="selectedImpersonateUserId"
-            class="text-xs bg-slate-800/90 text-white border border-indigo-400/40 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-400 outline-none max-w-full sm:max-w-[260px] font-medium"
-          >
-            <option value="" disabled>-- เลือกรายชื่อผู้ประเมิน --</option>
-            <option v-for="aud in evaluatorList" :key="aud.id" :value="aud.id">
-              {{ aud.fullName }} ({{ aud.positionName || formatRoleTitle(aud.role) }})
-            </option>
-            <option v-if="evaluatorList.length === 0" value="__DEMO__">
-              👤 กรรมการตรวจประเมิน (บัญชีทดสอบ)
-            </option>
-          </select>
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+          <!-- Autocomplete Search Input -->
+          <div class="relative w-full sm:w-72">
+            <div class="relative">
+              <input
+                v-model="impersonateSearchQuery"
+                @focus="showImpersonateDropdown = true"
+                @blur="onImpersonateInputBlur"
+                @keyup.enter="handleQuickImpersonate"
+                type="text"
+                placeholder="พิมพ์ค้นหาชื่อ-สกุล ผู้ประเมิน..."
+                class="w-full text-xs bg-slate-800/90 text-white placeholder:text-slate-400 border border-indigo-400/40 rounded-xl pl-8 pr-7 py-2.5 focus:ring-2 focus:ring-indigo-400 focus:bg-slate-800 outline-none font-medium transition-all"
+              />
+              <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
+              <button
+                v-if="impersonateSearchQuery"
+                type="button"
+                @mousedown.prevent="clearImpersonateSearch"
+                class="absolute right-2.5 top-2.5 text-slate-400 hover:text-white text-xs w-4 h-4 rounded-full flex items-center justify-center cursor-pointer"
+                title="ล้างคำค้นหา"
+              >
+                ✕
+              </button>
+            </div>
 
+            <!-- Floating Suggestions Dropdown -->
+            <div
+              v-if="showImpersonateDropdown"
+              class="absolute left-0 right-0 top-full mt-1.5 bg-slate-900/95 backdrop-blur-md border border-indigo-500/40 rounded-xl shadow-xl max-h-56 overflow-y-auto z-30 p-1 divide-y divide-slate-800"
+            >
+              <div
+                v-for="aud in filteredEvaluators"
+                :key="aud.id"
+                @mousedown.prevent="selectEvaluatorForImpersonate(aud)"
+                class="p-2 rounded-lg hover:bg-indigo-600/30 cursor-pointer transition-colors flex items-center justify-between text-xs"
+                :class="selectedImpersonateUser?.id === aud.id ? 'bg-indigo-600/40 text-amber-300 font-semibold' : 'text-slate-200'"
+              >
+                <div class="truncate mr-2">
+                  <div class="font-medium truncate flex items-center gap-1.5">
+                    <span>👤</span>
+                    <span class="truncate">{{ aud.fullName }}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 truncate">
+                    {{ aud.positionName || formatRoleTitle(aud.role) }} • <span class="font-mono text-indigo-300">{{ aud.userlogin }}</span>
+                  </div>
+                </div>
+                <span v-if="selectedImpersonateUser?.id === aud.id" class="text-amber-400 text-xs shrink-0">✓</span>
+              </div>
+
+              <div v-if="filteredEvaluators.length === 0" class="p-3 text-center text-xs text-slate-400">
+                ไม่พบผู้ประเมินที่ตรงกับคำค้นหา
+              </div>
+            </div>
+          </div>
+
+          <!-- Impersonate Button -->
           <button
             type="button"
-            @click="impersonateUser(selectedImpersonateUserId, '/evaluate')"
+            @click="handleQuickImpersonate"
             :disabled="isImpersonatingAction"
-            class="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
+            class="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer shrink-0"
           >
             <span v-if="!isImpersonatingAction">🚀</span>
-            <span v-else class="w-3 h-3 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></span>
+            <span v-else class="w-3.5 h-3.5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></span>
             <span>สวมบทบาท (ไปหน้าประเมิน)</span>
           </button>
         </div>
@@ -239,32 +276,44 @@
           </div>
 
           <div class="flex gap-2">
-            <input
-              v-model="ssoSearchKeyword"
-              @keyup.enter="searchSsoUsers"
-              type="text"
-              placeholder="พิมพ์ชื่อ, สกุล หรือ userlogin..."
-              class="flex-1 text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            />
+            <div class="relative flex-1">
+              <input
+                v-model="ssoSearchKeyword"
+                @keyup.enter="searchSsoUsers"
+                type="text"
+                placeholder="พิมพ์ชื่อ, สกุล หรือ userlogin แล้วกดค้นหา..."
+                class="w-full text-xs sm:text-sm pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+              <span class="absolute left-3 top-3 text-slate-400 text-xs">🔍</span>
+              <button
+                v-if="ssoSearchKeyword"
+                type="button"
+                @click="clearSsoSearch"
+                class="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 text-xs w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                title="ล้างคำค้นหา"
+              >
+                ✕
+              </button>
+            </div>
             <button
               type="button"
               @click="searchSsoUsers"
-              :disabled="isSearchingSso"
-              class="px-5 py-2.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm disabled:opacity-50"
+              :disabled="isSearchingSso || !ssoSearchKeyword.trim()"
+              class="px-5 py-2.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-1.5 flex-shrink-0 cursor-pointer"
             >
               <span v-if="isSearchingSso">กำลังค้นหา...</span>
               <span v-else>🔍 ค้นหา</span>
             </button>
           </div>
 
-          <!-- Search Results -->
-          <div v-if="ssoResults.length > 0" class="space-y-2 pt-2 border-t border-slate-100">
+          <!-- Search Results (แสดงเฉพาะเมื่อมีการพิมพ์คำค้นหาและมีผลลัพธ์) -->
+          <div v-if="ssoSearchKeyword.trim() && ssoResults.length > 0" class="space-y-2 pt-2 border-t border-slate-100">
             <div class="flex items-center justify-between">
               <h4 class="text-xs font-semibold text-slate-700">ผลการค้นหาบุคลากร ({{ ssoResults.length }} รายการ):</h4>
               <button
                 type="button"
-                @click="ssoSearchKeyword = ''; searchSsoUsers()"
-                class="text-[11px] text-indigo-600 hover:underline"
+                @click="clearSsoSearch"
+                class="text-[11px] text-indigo-600 hover:underline cursor-pointer"
               >
                 ล้างคำค้นหา
               </button>
@@ -292,7 +341,7 @@
                   <button
                     type="button"
                     @click="assignRole(u, 'ADMIN')"
-                    class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white shadow-sm flex items-center space-x-1"
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white shadow-sm flex items-center space-x-1 cursor-pointer"
                     title="แต่งตั้งเป็นผู้ดูแลระบบ (Admin)"
                   >
                     <span>🛡️</span>
@@ -301,7 +350,7 @@
                   <button
                     type="button"
                     @click="assignRole(u, 'AUDITOR')"
-                    class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center space-x-1"
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center space-x-1 cursor-pointer"
                     title="แต่งตั้งเป็นคณะกรรมการตรวจประเมิน"
                   >
                     <span>📋</span>
@@ -310,7 +359,7 @@
                   <button
                     type="button"
                     @click="assignRole(u, 'HOUSEKEEPER')"
-                    class="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center space-x-1"
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center space-x-1 cursor-pointer"
                     title="กำหนดเป็นผู้รับผิดชอบอาคาร"
                   >
                     <span>🏢</span>
@@ -320,21 +369,30 @@
               </div>
             </div>
           </div>
-          <div v-else-if="!isSearchingSso" class="py-6 text-center text-xs text-slate-400">
-            ไม่พบข้อมูลบุคลากร หรือยังไม่ได้เริ่มค้นหา
+
+          <!-- Empty state when searched but no results found -->
+          <div v-else-if="hasSearchedSso && ssoSearchKeyword.trim() && !isSearchingSso" class="py-6 text-center text-xs text-slate-400 space-y-1">
+            <div class="text-2xl">🔍</div>
+            <p class="font-medium text-slate-600">ไม่พบข้อมูลบุคลากรที่ตรงกับคำค้นหา "{{ ssoSearchKeyword }}"</p>
+            <p class="text-slate-400 text-[11px]">ลองตรวจสอบตัวสะกด หรือพิมพ์ชื่อ สกุล หรือ Username อื่น หรือใช้ปุ่ม "+ กำหนดสิทธิ์ด้วยตนเอง"</p>
+          </div>
+
+          <!-- Initial state before searching -->
+          <div v-else-if="!isSearchingSso && !ssoSearchKeyword.trim()" class="py-4 text-center text-xs text-slate-400">
+            💡 กรุณาพิมพ์ชื่อ, สกุล หรือ Username ในช่องค้นหาด้านบน แล้วกด <strong>ค้นหา</strong> เพื่อดึงข้อมูลบุคลากร
           </div>
         </div>
 
         <!-- Appointed Committee & Authorized Personnel List -->
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
               <h3 class="text-sm font-bold text-slate-900">รายชื่อบุคลากรและคณะกรรมการที่มีสิทธิ์ในระบบปัจจุบัน ({{ appointedUsers.length }} ท่าน)</h3>
               <p class="text-xs text-slate-500">สามารถเปลี่ยนสิทธิ์ หรือยกเลิกสิทธิ์การเข้าถึงระบบได้ทันที</p>
             </div>
 
             <!-- Role Filter Pills -->
-            <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl text-xs">
+            <div class="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs">
               <button
                 type="button"
                 @click="roleFilter = 'ALL'"
@@ -358,6 +416,55 @@
                 :class="roleFilter === 'AUDITOR' ? 'bg-indigo-600 text-white shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'"
               >
                 📋 กรรมการ ({{ appointedUsers.filter(u => u.role === 'AUDITOR').length }})
+              </button>
+              <button
+                type="button"
+                @click="roleFilter = 'HOUSEKEEPER'"
+                class="px-2.5 py-1 rounded-lg font-medium transition-all"
+                :class="roleFilter === 'HOUSEKEEPER' ? 'bg-amber-600 text-white shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'"
+              >
+                🏢 ผู้รับผิดชอบ ({{ appointedUsers.filter(u => u.role === 'HOUSEKEEPER').length }})
+              </button>
+              <button
+                v-if="appointedUsers.some(u => u.role === 'SUPERVISOR')"
+                type="button"
+                @click="roleFilter = 'SUPERVISOR'"
+                class="px-2.5 py-1 rounded-lg font-medium transition-all"
+                :class="roleFilter === 'SUPERVISOR' ? 'bg-teal-600 text-white shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'"
+              >
+                👁️ หัวหน้างาน ({{ appointedUsers.filter(u => u.role === 'SUPERVISOR').length }})
+              </button>
+            </div>
+          </div>
+
+          <!-- Search Toolbar for Appointed Personnel -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="relative flex-1">
+              <input
+                v-model="appointedUserSearchQuery"
+                type="text"
+                placeholder="ค้นหาตามชื่อ-สกุล, ตำแหน่ง หรือ Username (userlogin)..."
+                class="w-full text-xs sm:text-sm pl-9 pr-8 py-2 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium placeholder:font-normal placeholder:text-slate-400"
+              />
+              <span class="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
+              <button
+                v-if="appointedUserSearchQuery"
+                type="button"
+                @click="appointedUserSearchQuery = ''"
+                class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                title="ล้างคำค้นหา"
+              >
+                ✕
+              </button>
+            </div>
+            <div v-if="appointedUserSearchQuery || roleFilter !== 'ALL'" class="text-xs text-slate-500 flex items-center gap-2 self-start sm:self-center flex-shrink-0">
+              <span>พบ <strong>{{ filteredAppointedUsers.length }}</strong> จาก {{ appointedUsers.length }} ท่าน</span>
+              <button
+                type="button"
+                @click="clearAppointedUserFilters"
+                class="text-indigo-600 hover:text-indigo-700 hover:underline font-medium cursor-pointer"
+              >
+                ✕ ล้างการค้นหา/ตัวกรอง
               </button>
             </div>
           </div>
@@ -427,8 +534,20 @@
               </div>
             </div>
 
-            <div v-if="filteredAppointedUsers.length === 0" class="py-6 text-center text-xs text-slate-400">
-              ไม่มีรายชื่อบุคลากรในหมวดหมู่นี้
+            <div v-if="filteredAppointedUsers.length === 0" class="py-8 text-center text-xs text-slate-400 space-y-2">
+              <div class="text-2xl">🔍</div>
+              <p class="font-medium text-slate-600">
+                {{ appointedUserSearchQuery ? `ไม่พบรายชื่อบุคลากรที่ตรงกับ "${appointedUserSearchQuery}"` : 'ไม่มีรายชื่อบุคลากรในหมวดหมู่นี้' }}
+              </p>
+              <div v-if="appointedUserSearchQuery || roleFilter !== 'ALL'" class="pt-1">
+                <button
+                  type="button"
+                  @click="clearAppointedUserFilters"
+                  class="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors cursor-pointer"
+                >
+                  ล้างตัวกรองและการค้นหา
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -451,42 +570,80 @@
           </button>
         </div>
 
-        <!-- Search Bar for Buildings and Caretakers -->
-        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2.5">
-          <div class="relative">
-            <input
-              v-model="buildingSearchQuery"
-              type="text"
-              placeholder="ค้นหาตามชื่ออาคาร, รหัสอาคาร หรือผู้ดูแลอาคาร/แม่บ้าน..."
-              class="w-full text-xs sm:text-sm pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
-            />
-            <span class="absolute left-3 top-3 text-slate-400 text-xs">🔍</span>
-            <button
-              v-if="buildingSearchQuery"
-              type="button"
-              @click="buildingSearchQuery = ''"
-              class="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 text-xs w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
-              title="ล้างคำค้นหา"
-            >
-              ✕
-            </button>
+        <!-- Search Bar: Separated by Building Name and Staff Name -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Box 1: ค้นหาด้วยชื่ออาคาร / รหัสอาคาร -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                <span>🏢</span>
+                <span>ค้นหาด้วยชื่ออาคาร</span>
+              </label>
+              <div class="relative">
+                <input
+                  v-model="searchBuildingName"
+                  type="text"
+                  placeholder="พิมพ์ชื่ออาคาร หรือรหัสอาคาร (เช่น อาคาร 15, B15)..."
+                  class="w-full text-xs sm:text-sm pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium placeholder:font-normal placeholder:text-slate-400"
+                />
+                <span class="absolute left-3 top-3 text-slate-400 text-xs">🔍</span>
+                <button
+                  v-if="searchBuildingName"
+                  type="button"
+                  @click="searchBuildingName = ''"
+                  class="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 text-xs w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="ล้างคำค้นหาชื่ออาคาร"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <!-- Box 2: ค้นหาด้วยชื่อบุคลากร / แม่บ้าน -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                <span>🧹</span>
+                <span>ค้นหาด้วยชื่อบุคลากร (ผู้รับผิดชอบ/แม่บ้าน)</span>
+              </label>
+              <div class="relative">
+                <input
+                  v-model="searchStaffName"
+                  type="text"
+                  placeholder="พิมพ์ชื่อ-สกุล ผู้รับผิดชอบ หรือแม่บ้านประจำอาคาร..."
+                  class="w-full text-xs sm:text-sm pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium placeholder:font-normal placeholder:text-slate-400"
+                />
+                <span class="absolute left-3 top-3 text-slate-400 text-xs">👤</span>
+                <button
+                  v-if="searchStaffName"
+                  type="button"
+                  @click="searchStaffName = ''"
+                  class="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 text-xs w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="ล้างคำค้นหาชื่อบุคลากร"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Result Count / Filter Indicator -->
-          <div class="flex items-center justify-between text-xs text-slate-500 px-1">
-            <span>
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 pt-2 border-t border-slate-100 px-0.5">
+            <div>
               พบอาคาร <strong>{{ filteredBuildings.length }}</strong> จากทั้งหมด <strong>{{ buildings.length }}</strong> แห่ง
-              <span v-if="buildingSearchQuery" class="text-indigo-600 font-medium ml-1">
-                (กรองตามคำค้นหา "{{ buildingSearchQuery }}")
+              <span v-if="searchBuildingName" class="text-indigo-600 font-medium ml-1.5">
+                • อาคาร: "{{ searchBuildingName }}"
               </span>
-            </span>
+              <span v-if="searchStaffName" class="text-purple-600 font-medium ml-1.5">
+                • บุคลากร: "{{ searchStaffName }}"
+              </span>
+            </div>
             <button
-              v-if="buildingSearchQuery"
+              v-if="searchBuildingName || searchStaffName"
               type="button"
-              @click="buildingSearchQuery = ''"
+              @click="clearAllBuildingSearches"
               class="text-indigo-600 hover:text-indigo-700 hover:underline font-medium cursor-pointer"
             >
-              ✕ ล้างการค้นหา
+              ✕ ล้างการค้นหาทั้งหมด
             </button>
           </div>
         </div>
@@ -562,18 +719,18 @@
         <div v-else class="py-12 text-center bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
           <div class="text-3xl">🔍</div>
           <p class="text-sm font-semibold text-slate-700">
-            {{ buildingSearchQuery ? 'ไม่พบอาคารที่ตรงกับคำค้นหา' : 'ยังไม่มีข้อมูลอาคารในระบบ' }}
+            {{ (searchBuildingName || searchStaffName) ? 'ไม่พบอาคารที่ตรงกับเงื่อนไขการค้นหา' : 'ยังไม่มีข้อมูลอาคารในระบบ' }}
           </p>
-          <p v-if="buildingSearchQuery" class="text-xs text-slate-400 max-w-sm mx-auto">
-            ไม่พบผลลัพธ์ที่ตรงกับ "{{ buildingSearchQuery }}" ลองค้นหาด้วยชื่ออาคาร, รหัสอาคาร หรือชื่อผู้รับผิดชอบ/แม่บ้านคำอื่น
+          <p v-if="searchBuildingName || searchStaffName" class="text-xs text-slate-400 max-w-sm mx-auto">
+            ไม่พบผลลัพธ์ที่ตรงกับเงื่อนไขที่ระบุ ลองปรับเปลี่ยนคำค้นหาชื่ออาคาร หรือชื่อผู้รับผิดชอบ/แม่บ้าน
           </p>
-          <div v-if="buildingSearchQuery" class="pt-2">
+          <div v-if="searchBuildingName || searchStaffName" class="pt-2">
             <button
               type="button"
-              @click="buildingSearchQuery = ''"
+              @click="clearAllBuildingSearches"
               class="px-3.5 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-indigo-200"
             >
-              ล้างคำค้นหา
+              ล้างคำค้นหาทั้งหมด
             </button>
           </div>
         </div>
@@ -1137,10 +1294,11 @@
                     <button
                       type="button"
                       @click="deleteReportAssessment(item)"
-                      class="px-2.5 py-1 rounded-lg text-xs font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80 transition-colors cursor-pointer"
-                      title="ลบผลการประเมินนี้"
+                      class="px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer inline-flex items-center space-x-1"
+                      title="รีเซ็ตและล้างข้อมูลการประเมินรายการนี้ในรอบนี้"
                     >
-                      🗑️ ลบ
+                      <span>🔄</span>
+                      <span>รีเซ็ต</span>
                     </button>
                   </td>
                 </tr>
@@ -2226,7 +2384,13 @@ const isSearchingSso = ref(false)
 const ssoResults = ref<any[]>([])
 const ssoSource = ref('')
 const appointedUsers = ref<any[]>([])
-const roleFilter = ref<'ALL' | 'ADMIN' | 'AUDITOR'>('ALL')
+const roleFilter = ref<string>('ALL')
+const appointedUserSearchQuery = ref('')
+
+function clearAppointedUserFilters() {
+  appointedUserSearchQuery.value = ''
+  roleFilter.value = 'ALL'
+}
 
 const showAddManualUserModal = ref(false)
 const manualUserForm = reactive({
@@ -2238,8 +2402,20 @@ const manualUserForm = reactive({
 })
 
 const filteredAppointedUsers = computed(() => {
-  if (roleFilter.value === 'ALL') return appointedUsers.value
-  return appointedUsers.value.filter(u => u.role === roleFilter.value)
+  const q = appointedUserSearchQuery.value.trim().toLowerCase()
+  return appointedUsers.value.filter((u: any) => {
+    // 1. Role filter
+    const matchRole = roleFilter.value === 'ALL' || u.role === roleFilter.value
+    if (!matchRole) return false
+
+    // 2. Search query matching fullName, userlogin, positionName, email
+    if (!q) return true
+    const nameMatch = u.fullName && String(u.fullName).toLowerCase().includes(q)
+    const loginMatch = u.userlogin && String(u.userlogin).toLowerCase().includes(q)
+    const posMatch = u.positionName && String(u.positionName).toLowerCase().includes(q)
+    const emailMatch = u.email && String(u.email).toLowerCase().includes(q)
+    return !!(nameMatch || loginMatch || posMatch || emailMatch)
+  })
 })
 
 function formatRoleTitle(role: string) {
@@ -2255,7 +2431,9 @@ function formatRoleTitle(role: string) {
 // ========================
 // EVALUATOR IMPERSONATION
 // ========================
-const selectedImpersonateUserId = ref('')
+const impersonateSearchQuery = ref('')
+const selectedImpersonateUser = ref<any>(null)
+const showImpersonateDropdown = ref(false)
 const isImpersonatingAction = ref(false)
 
 const evaluatorList = computed(() => {
@@ -2264,11 +2442,54 @@ const evaluatorList = computed(() => {
   return appointedUsers.value
 })
 
-watch(evaluatorList, (list) => {
-  if (list && list.length > 0 && !selectedImpersonateUserId.value) {
-    selectedImpersonateUserId.value = list[0].id
+const filteredEvaluators = computed(() => {
+  const q = impersonateSearchQuery.value.trim().toLowerCase()
+  if (!q) return evaluatorList.value
+  return evaluatorList.value.filter((u: any) => {
+    const nameMatch = u.fullName && String(u.fullName).toLowerCase().includes(q)
+    const loginMatch = u.userlogin && String(u.userlogin).toLowerCase().includes(q)
+    const posMatch = u.positionName && String(u.positionName).toLowerCase().includes(q)
+    return !!(nameMatch || loginMatch || posMatch)
+  })
+})
+
+function selectEvaluatorForImpersonate(user: any) {
+  selectedImpersonateUser.value = user
+  impersonateSearchQuery.value = user.fullName
+  showImpersonateDropdown.value = false
+}
+
+function clearImpersonateSearch() {
+  impersonateSearchQuery.value = ''
+  selectedImpersonateUser.value = null
+  showImpersonateDropdown.value = true
+}
+
+function onImpersonateInputBlur() {
+  setTimeout(() => {
+    showImpersonateDropdown.value = false
+  }, 200)
+}
+
+async function handleQuickImpersonate() {
+  let target = selectedImpersonateUser.value
+  if (!target && impersonateSearchQuery.value.trim()) {
+    const q = impersonateSearchQuery.value.trim().toLowerCase()
+    target = evaluatorList.value.find((u: any) =>
+      u.fullName?.toLowerCase().includes(q) || u.userlogin?.toLowerCase().includes(q)
+    )
   }
-}, { immediate: true })
+  if (!target) {
+    if (evaluatorList.value.length > 0) {
+      target = evaluatorList.value[0]
+      selectEvaluatorForImpersonate(target)
+    } else {
+      showToast('ไม่พบรายชื่อผู้ประเมินในระบบ', 'error')
+      return
+    }
+  }
+  await impersonateUser(target, '/evaluate')
+}
 
 async function impersonateUser(target: any, redirectPath = '/evaluate') {
   if (isImpersonatingAction.value) return
@@ -2322,17 +2543,35 @@ async function fetchUsers() {
   } catch (e) {}
 }
 
+const hasSearchedSso = ref(false)
+
+function clearSsoSearch() {
+  ssoSearchKeyword.value = ''
+  ssoResults.value = []
+  hasSearchedSso.value = false
+}
+
 async function searchSsoUsers() {
+  const kw = ssoSearchKeyword.value.trim()
+  if (!kw) {
+    ssoResults.value = []
+    hasSearchedSso.value = false
+    return
+  }
   isSearchingSso.value = true
+  hasSearchedSso.value = true
   try {
-    const keyword = encodeURIComponent(ssoSearchKeyword.value.trim())
+    const keyword = encodeURIComponent(kw)
     const res: any = await $fetch(`/api/sso/search?search=${keyword}`)
     if (res?.data) {
       ssoResults.value = res.data
       ssoSource.value = res.source || ''
+    } else {
+      ssoResults.value = []
     }
   } catch (err) {
     console.error(err)
+    ssoResults.value = []
   } finally {
     isSearchingSso.value = false
   }
@@ -2443,33 +2682,45 @@ async function saveManualUser() {
 // 3. BUILDINGS & HYBRID STAFF MANAGEMENT
 // ==============================================
 const buildings = ref<any[]>([])
-const buildingSearchQuery = ref('')
+const searchBuildingName = ref('')
+const searchStaffName = ref('')
 
-// Filtered buildings by building name, code, description, or caretaker/staff name
+function clearAllBuildingSearches() {
+  searchBuildingName.value = ''
+  searchStaffName.value = ''
+}
+
+// Filtered buildings by building name/code/desc and/or staff/caretaker name
 const filteredBuildings = computed(() => {
-  const q = buildingSearchQuery.value.trim().toLowerCase()
-  if (!q) return buildings.value
+  const bQuery = searchBuildingName.value.trim().toLowerCase()
+  const sQuery = searchStaffName.value.trim().toLowerCase()
+
+  if (!bQuery && !sQuery) return buildings.value
 
   return buildings.value.filter((b: any) => {
-    // 1. Check building name, code, description
-    const nameMatch = b.name && String(b.name).toLowerCase().includes(q)
-    const codeMatch = b.code && String(b.code).toLowerCase().includes(q)
-    const descMatch = b.description && String(b.description).toLowerCase().includes(q)
-    const responsibleStaffMatch = b.responsibleStaff && String(b.responsibleStaff).toLowerCase().includes(q)
+    let matchesBuilding = true
+    if (bQuery) {
+      const nameMatch = b.name && String(b.name).toLowerCase().includes(bQuery)
+      const codeMatch = b.code && String(b.code).toLowerCase().includes(bQuery)
+      const descMatch = b.description && String(b.description).toLowerCase().includes(bQuery)
+      matchesBuilding = !!(nameMatch || codeMatch || descMatch)
+    }
 
-    // 2. Check caretakers / responsible staff
-    const staffMatch = Array.isArray(b.staffs) && b.staffs.some((s: any) => {
-      const sName = s.staffName || s.fullName || s.name || ''
-      const sLogin = s.userlogin || s.username || ''
-      return String(sName).toLowerCase().includes(q) || String(sLogin).toLowerCase().includes(q)
-    })
+    let matchesStaff = true
+    if (sQuery) {
+      const responsibleStaffMatch = b.responsibleStaff && String(b.responsibleStaff).toLowerCase().includes(sQuery)
+      const staffMatch = Array.isArray(b.staffs) && b.staffs.some((s: any) => {
+        const sName = s.staffName || s.fullName || s.name || ''
+        const sLogin = s.userlogin || s.username || ''
+        return String(sName).toLowerCase().includes(sQuery) || String(sLogin).toLowerCase().includes(sQuery)
+      })
+      const auditorMatch = Array.isArray(b.auditors) && b.auditors.some((a: any) => {
+        return String(a.fullName || '').toLowerCase().includes(sQuery) || String(a.userlogin || '').toLowerCase().includes(sQuery)
+      })
+      matchesStaff = !!(responsibleStaffMatch || staffMatch || auditorMatch)
+    }
 
-    // 3. Check assigned committee auditors
-    const auditorMatch = Array.isArray(b.auditors) && b.auditors.some((a: any) => {
-      return String(a.fullName || '').toLowerCase().includes(q) || String(a.userlogin || '').toLowerCase().includes(q)
-    })
-
-    return nameMatch || codeMatch || descMatch || responsibleStaffMatch || staffMatch || auditorMatch
+    return matchesBuilding && matchesStaff
   })
 })
 const showAddBuildingModal = ref(false)
@@ -2863,7 +3114,10 @@ async function deleteReportAssessment(item: any) {
   const staffDisplay = formatReportDisplayName(item.responsibleStaffText)
   const assessorDisplay = formatReportDisplayName(item.assessor?.fullName || item.assessorName)
   const buildingDisplay = item.building?.name || item.buildingName || 'อาคาร'
-  if (!confirm(`ยืนยันการลบผลการประเมินของ "${staffDisplay}" (${buildingDisplay})\nโดยผู้ประเมิน: ${assessorDisplay} ใช่หรือไม่?`)) {
+  const roundObj = rounds.value.find((r: any) => r.id === item.roundId)
+  const roundDisplay = roundObj?.name || item.roundId || 'รอบการประเมินนี้'
+
+  if (!confirm(`ยืนยันการรีเซ็ต/ล้างข้อมูลการประเมินของ "${staffDisplay}" (${buildingDisplay})\nในรอบ: ${roundDisplay}\nโดยผู้ประเมิน: ${assessorDisplay} ใช่หรือไม่?\n\nข้อมูลการประเมินครั้งนี้จะถูกล้างออกจากระบบ เพื่อให้สามารถประเมินใหม่ได้`)) {
     return
   }
 
@@ -2872,11 +3126,11 @@ async function deleteReportAssessment(item: any) {
       method: 'DELETE'
     })
     if (res?.ok) {
-      showToast('ลบผลการประเมินเรียบร้อยแล้ว')
+      showToast('รีเซ็ตและล้างข้อมูลการประเมินเรียบร้อยแล้ว')
       await fetchReportAssessments()
     }
   } catch (err: any) {
-    showToast(err?.data?.message || err?.message || 'ไม่สามารถลบผลการประเมินได้', 'error')
+    showToast(err?.data?.message || err?.message || 'ไม่สามารถรีเซ็ตผลการประเมินได้', 'error')
   }
 }
 
@@ -3032,7 +3286,6 @@ onMounted(() => {
   fetchBuildings()
   fetchStaffPool()
   fetchQuestions()
-  searchSsoUsers()
   fetchColorCriteria()
   fetchReportAssessments()
 })

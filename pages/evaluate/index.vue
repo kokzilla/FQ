@@ -16,10 +16,12 @@
           </span>
           <button
             type="button"
-            @click="resetForm"
-            class="text-[11px] text-slate-400 hover:text-rose-600 transition-colors px-2 py-1"
+            @click="resetCurrentAssessment"
+            class="inline-flex items-center space-x-1 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-xl px-3 py-1.5 transition-colors cursor-pointer shadow-2xs"
+            title="รีเซ็ตและล้างข้อมูลการประเมินของบุคลากรท่านนี้ในรอบนี้"
           >
-            ล้างข้อมูล
+            <span>🔄</span>
+            <span>รีเซ็ตการประเมิน (Reset)</span>
           </button>
         </div>
       </div>
@@ -136,12 +138,13 @@
                   (มีผลประเมินเดิม)
                 </span>
                 <button
-                  v-if="currentAssessmentId"
                   type="button"
-                  @click="deleteAssessmentById(currentAssessmentId, form.responsibleStaffText)"
-                  class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
+                  @click="resetCurrentAssessment"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer shadow-2xs"
+                  title="รีเซ็ตและล้างข้อมูลการประเมินของบุคลากรท่านนี้ในรอบนี้"
                 >
-                  🗑️ ลบผลการประเมินนี้
+                  <span>🔄</span>
+                  <span>รีเซ็ตการประเมิน (Reset)</span>
                 </button>
               </div>
             </div>
@@ -251,6 +254,7 @@
 
         <QuestionCard
           v-for="q in currentQuestions"
+          :id="'question-card-' + q.id"
           :key="q.id"
           :item-number="q.itemNumber"
           :title="q.title"
@@ -265,24 +269,38 @@
         />
 
         <!-- Next / Previous Category Quick Navigation -->
-        <div class="flex items-center justify-between pt-4 pb-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-6">
           <button
             v-if="activeTab > 1"
             type="button"
             @click="changeTab(activeTab - 1)"
-            class="px-4 py-2 rounded-xl text-xs font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+            class="px-4 py-2 rounded-xl text-xs font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 cursor-pointer"
           >
             ← หมวดก่อนหน้า
           </button>
           <div v-else></div>
 
-          <button
-            type="button"
-            @click="changeTab(activeTab + 1)"
-            class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
-          >
-            {{ activeTab === 7 ? 'ไปยังข้อค้นพบตอนที่ 2 →' : 'หมวดถัดไป →' }}
-          </button>
+          <div class="flex items-center space-x-2">
+            <!-- ปุ่มส่งผลทันทีเมื่อมีการแจ้งเตือนลืมประเมิน -->
+            <button
+              v-if="hasAttemptedSubmit"
+              type="button"
+              @click="submitAssessment"
+              :disabled="isSubmitting || isSelectedStaffQuotaFullAndLocked"
+              class="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <span>✓</span>
+              <span>{{ currentAssessmentId ? 'บันทึกแก้ไข' : 'ส่งผลประเมิน' }}</span>
+            </button>
+
+            <button
+              type="button"
+              @click="changeTab(activeTab + 1)"
+              class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm cursor-pointer"
+            >
+              {{ activeTab === 7 ? 'ไปยังข้อค้นพบตอนที่ 2 →' : 'หมวดถัดไป →' }}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -347,20 +365,35 @@
           <button
             type="button"
             @click="changeTab(7)"
-            class="px-4 py-2 rounded-xl text-xs font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+            class="px-4 py-2 rounded-xl text-xs font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 cursor-pointer"
           >
             ← ย้อนกลับไปหมวดที่ 7
           </button>
 
-          <button
-            type="button"
-            @click="submitAssessment"
-            :disabled="isSubmitting || isSelectedStaffQuotaFullAndLocked"
-            class="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-95 transition-all flex items-center space-x-2 disabled:opacity-50"
-          >
-            <span v-if="isSubmitting">กำลังบันทึก...</span>
-            <span v-else>{{ currentAssessmentId ? '✓ บันทึกการแก้ไขผลการประเมิน' : '✓ ยืนยันและส่งผลการประเมิน' }}</span>
-          </button>
+          <div class="flex items-center space-x-2.5">
+            <!-- Reset Button for this assessment in this round -->
+            <button
+              type="button"
+              @click="resetCurrentAssessment"
+              :disabled="isSubmitting"
+              class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+              title="รีเซ็ตและล้างข้อมูลการประเมินของบุคลากรท่านนี้ในรอบนี้ทั้งหมด"
+            >
+              <span>🔄</span>
+              <span>รีเซ็ตการประเมิน (Reset)</span>
+            </button>
+
+            <!-- Submit Button -->
+            <button
+              type="button"
+              @click="submitAssessment"
+              :disabled="isSubmitting || isSelectedStaffQuotaFullAndLocked"
+              class="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-95 transition-all flex items-center space-x-2 disabled:opacity-50 cursor-pointer"
+            >
+              <span v-if="isSubmitting">กำลังบันทึก...</span>
+              <span v-else>{{ currentAssessmentId ? '✓ บันทึกการแก้ไขผลการประเมิน' : '✓ ยืนยันและส่งผลการประเมิน' }}</span>
+            </button>
+          </div>
         </div>
       </section>
     </main>
@@ -377,13 +410,14 @@
     >
       <template #action>
         <button
-          v-if="activeTab === 8"
+          v-if="activeTab === 8 || hasAttemptedSubmit"
           type="button"
           @click="submitAssessment"
           :disabled="isSubmitting || isSelectedStaffQuotaFullAndLocked"
-          class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
+          class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center space-x-1"
         >
-          {{ currentAssessmentId ? 'บันทึกแก้ไข' : 'ส่งผลประเมิน' }}
+          <span>✓</span>
+          <span>{{ currentAssessmentId ? 'บันทึกแก้ไข' : 'ส่งผลประเมิน' }}</span>
         </button>
       </template>
     </ScoreSummaryBar>
@@ -434,6 +468,7 @@ function showToast(message: string, type: 'success' | 'error' = 'success') {
 
 const activeTab = ref(1)
 const isSubmitting = ref(false)
+const hasAttemptedSubmit = ref(false)
 const selectedBuildingId = ref('')
 const selectedStaffId = ref('')
 const isCustomStaff = ref(false)
@@ -752,6 +787,64 @@ async function deleteAssessmentById(id: string, staffName?: string) {
   }
 }
 
+async function resetCurrentAssessment() {
+  const staffDisplay = formatStaffDisplayName(form.responsibleStaffText || 'ผู้ปฏิบัติงาน')
+  const buildingDisplay = form.buildingName || 'อาคารที่เลือก'
+  const roundObj = availableRounds.value.find((r: any) => r.id === selectedRoundId.value)
+  const roundDisplay = roundObj?.name || 'รอบการประเมินนี้'
+
+  if (!selectedBuildingId.value && !form.responsibleStaffText) {
+    if (confirm('คุณต้องการรีเซ็ตข้อมูลและเริ่มใหม่ทั้งหมดใช่หรือไม่?')) {
+      clearDraft()
+      resetScoresAndFindings()
+      selectedBuildingId.value = ''
+      buildingSearchQuery.value = ''
+      selectedStaffId.value = ''
+      form.buildingName = ''
+      form.staffId = ''
+      form.responsibleStaffText = ''
+      existingAssessments.value = []
+      showToast('รีเซ็ตข้อมูลแบบประเมินเรียบร้อยแล้ว', 'success')
+    }
+    return
+  }
+
+  const confirmMsg = currentAssessmentId.value
+    ? `คุณต้องการรีเซ็ตและล้างข้อมูลการประเมินของ "${staffDisplay}" (${buildingDisplay}) ใน "${roundDisplay}" ใช่หรือไม่?\n\nผลการประเมินที่เคยบันทึกไว้ในฐานข้อมูลและแบบร่างทั้งหมดจะถูกล้างออก เพื่อให้ท่านสามารถประเมินใหม่ได้`
+    : `คุณต้องการรีเซ็ตและล้างข้อมูลคะแนนที่กรอกไว้ของ "${staffDisplay}" (${buildingDisplay}) ใน "${roundDisplay}" ใช่หรือไม่?`
+
+  if (!confirm(confirmMsg)) return
+
+  // 1. หากมีบันทึกในฐานข้อมูล ให้ลบออกจากระบบ
+  if (currentAssessmentId.value) {
+    try {
+      const res: any = await $fetch(`/api/assessments/${currentAssessmentId.value}`, {
+        method: 'DELETE'
+      })
+      if (!res?.ok) {
+        throw new Error(res?.message || 'ไม่สามารถลบผลการประเมินจากระบบได้')
+      }
+    } catch (err: any) {
+      showToast(err?.data?.message || err?.message || 'เกิดข้อผิดพลาดในการลบผลการประเมิน', 'error')
+      return
+    }
+  }
+
+  // 2. ล้างแบบร่างใน localStorage ของบุคคลนี้ในรอบและอาคารนี้
+  clearDraft(form.staffId || selectedStaffId.value)
+
+  // 3. รีเซ็ตคะแนนและข้อค้นพบทั้งหมดในฟอร์ม
+  resetScoresAndFindings()
+
+  // 4. ดึงข้อมูลประเมินล่าสุดเพื่อรีเฟรชสถานะปุ่มและโควตา
+  await fetchExistingAssessments()
+
+  // 5. ปรับกลับไปหน้าหมวดที่ 1
+  activeTab.value = 1
+
+  showToast(`รีเซ็ตข้อมูลการประเมินของ "${staffDisplay}" ใน "${roundDisplay}" เรียบร้อยแล้ว`, 'success')
+}
+
 async function editMyAssessmentItem(item: any) {
   if (!item) return
   const b = buildings.value.find((x: any) => x.id === item.buildingId)
@@ -823,6 +916,7 @@ function selectCustomStaff() {
 }
 
 function loadExistingAssessmentData(existing: any) {
+  hasAttemptedSubmit.value = false
   currentAssessmentId.value = existing.id
   form.assessmentDate = existing.assessedAt
     ? new Date(existing.assessedAt).toISOString().split('T')[0]
@@ -859,6 +953,7 @@ function loadExistingAssessmentData(existing: any) {
 
 function resetScoresAndFindings() {
   currentAssessmentId.value = null
+  hasAttemptedSubmit.value = false
   form.strengthsSummary = ''
   form.urgentProblems = ''
   form.correctivePlan = ''
@@ -904,18 +999,53 @@ watch(selectedRoundId, async () => {
   }
 })
 
-// Auto-Save Draft (แยกรายบุคคลตามรอบ อาคาร และผู้ปฏิบัติงาน)
-function getDraftKey(roundId?: string, buildingId?: string, staffId?: string) {
+// ตรวจจับการสลับเซสชัน / สวมบทบาท เพื่อล้างฟอร์มและรีเฟรชข้อมูลให้ตรงกับผู้ประเมินปัจจุบัน
+watch(() => userSession.value?.id || userSession.value?.userlogin, async () => {
+  form.assessorName = currentAssessorDisplayName.value
+  resetScoresAndFindings()
+  if (selectedBuildingId.value) {
+    await fetchExistingAssessments()
+    if (selectedStaffId.value && !isCustomStaff.value) {
+      const s = currentBuildingStaffs.value.find((item: any) => item.id === selectedStaffId.value)
+      if (s) {
+        selectStaff(s)
+      }
+    }
+  }
+})
+
+// Auto-Save Draft (แยกรายบุคคลตามผู้ประเมิน รอบ อาคาร และผู้ปฏิบัติงาน)
+function getDraftKey(roundId?: string, buildingId?: string, staffId?: string, assessorId?: string) {
+  const u = assessorId || userSession.value?.id || userSession.value?.userlogin || 'guest'
   const r = roundId || selectedRoundId.value || 'round-2570'
   const b = buildingId || selectedBuildingId.value || 'no-bldg'
   const s = staffId || selectedStaffId.value || (isCustomStaff.value ? '__CUSTOM__' : 'default')
-  return `bru_eval_draft_${r}_${b}_${s}`
+  return `bru_eval_draft_${u}_${r}_${b}_${s}`
+}
+
+function cleanLegacyDrafts() {
+  if (!process.client) return
+  try {
+    const keysToRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      // คีย์แบบเก่า bru_eval_draft_round-xxxx_... ที่ไม่มี assessorId
+      if (k && k.startsWith('bru_eval_draft_') && k.split('_').length === 6) {
+        keysToRemove.push(k)
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k))
+    localStorage.removeItem('bru_eval_draft_v1')
+  } catch (e) {
+    console.warn('Failed to clean legacy drafts', e)
+  }
 }
 
 function saveDraft() {
   if (process.client && selectedBuildingId.value && selectedStaffId.value) {
     const key = getDraftKey()
     localStorage.setItem(key, JSON.stringify({
+      assessorId: userSession.value?.id || userSession.value?.userlogin || 'guest',
       selectedRoundId: selectedRoundId.value,
       selectedBuildingId: selectedBuildingId.value,
       selectedStaffId: selectedStaffId.value,
@@ -933,6 +1063,11 @@ function loadDraftForStaff(staffId?: string): boolean {
   if (draft) {
     try {
       const parsed = JSON.parse(draft)
+      // ตรวจสอบว่าแบบร่างนี้เป็นของผู้ประเมินคนปัจจุบันจริง เพื่อป้องกันการปนเปื้อนข้ามเซสชัน/การสวมบทบาท
+      const currentAssessor = userSession.value?.id || userSession.value?.userlogin
+      if (parsed.assessorId && currentAssessor && parsed.assessorId !== currentAssessor) {
+        return false
+      }
       if (parsed.form) {
         currentAssessmentId.value = parsed.currentAssessmentId || null
         Object.assign(form, parsed.form)
@@ -949,6 +1084,11 @@ function clearDraft(staffId?: string) {
   if (process.client) {
     const key = getDraftKey(selectedRoundId.value, selectedBuildingId.value, staffId || selectedStaffId.value)
     localStorage.removeItem(key)
+    // ล้างคีย์แบบเดิมที่ไม่ได้แยกตามผู้ประเมินด้วย
+    const r = selectedRoundId.value || 'round-2570'
+    const b = selectedBuildingId.value || 'no-bldg'
+    const s = staffId || selectedStaffId.value || (isCustomStaff.value ? '__CUSTOM__' : 'default')
+    localStorage.removeItem(`bru_eval_draft_${r}_${b}_${s}`)
     localStorage.removeItem('bru_eval_draft_v1')
   }
 }
@@ -956,6 +1096,7 @@ function clearDraft(staffId?: string) {
 function resetForm() {
   if (confirm('คุณต้องการล้างข้อมูลแบบประเมินทั้งหมดและเริ่มใหม่ใช่หรือไม่?')) {
     clearDraft()
+    cleanLegacyDrafts()
     resetScoresAndFindings()
     selectedBuildingId.value = ''
     buildingSearchQuery.value = ''
@@ -968,6 +1109,7 @@ function resetForm() {
 }
 
 onMounted(async () => {
+  cleanLegacyDrafts()
   try {
     const [bRes, rRes, qRes, cRes]: any = await Promise.all([
       $fetch('/api/buildings'),
@@ -1082,8 +1224,17 @@ async function submitAssessment() {
     const item = form.scores[q.id]
     const isAnswered = item && (item.isNA || (item.score !== null && item.score !== undefined))
     if (!isAnswered) {
+      hasAttemptedSubmit.value = true
       activeTab.value = q.categoryId
       showToast(`กรุณาประเมินข้อที่ ${q.itemNumber} ในหมวดที่ ${q.categoryId} ให้ครบถ้วนก่อนส่งผล`, 'error')
+      if (process.client) {
+        nextTick(() => {
+          const el = document.getElementById(`question-card-${q.id}`)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        })
+      }
       return
     }
   }
@@ -1116,6 +1267,7 @@ async function submitAssessment() {
     })
 
     if (res?.ok) {
+      hasAttemptedSubmit.value = false
       clearDraft(form.staffId || selectedStaffId.value)
       await fetchExistingAssessments()
 

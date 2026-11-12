@@ -233,4 +233,18 @@ describe('3. Integration & Data Layer Tests (IT-02 to IT-07)', () => {
     assert.equal(extractFirstName('ผศ. ดร. วิชัย สว่างวงศ์'), 'วิชัย')
     assert.equal(extractFirstName('พัชรา พะสุรัมย์'), 'พัชรา')
   })
+
+  it('UT-06: Assessor-Isolated Evaluation Draft Key (การแยกคีย์แบบร่างตามผู้ประเมิน ป้องกันการปนเปื้อนข้อมูลเมื่อสวมบทบาท)', () => {
+    function generateDraftKey(assessorId: string, roundId: string, buildingId: string, staffId: string) {
+      return `bru_eval_draft_${assessorId || 'guest'}_${roundId || 'round-2570'}_${buildingId || 'no-bldg'}_${staffId || 'default'}`
+    }
+
+    const adminDraftKey = generateDraftKey('admin-user-01', 'round-2570', 'bldg-15', 'staff-99')
+    const impersonatedAuditorDraftKey = generateDraftKey('auditor-88', 'round-2570', 'bldg-15', 'staff-99')
+
+    // คีย์ของแอดมินและกรรมการที่สวมบทบาทต้องแยกจากกัน 100% แม้อยู่ในอาคารและผู้รับผิดชอบคนเดียวกัน
+    assert.notEqual(adminDraftKey, impersonatedAuditorDraftKey)
+    assert.equal(adminDraftKey, 'bru_eval_draft_admin-user-01_round-2570_bldg-15_staff-99')
+    assert.equal(impersonatedAuditorDraftKey, 'bru_eval_draft_auditor-88_round-2570_bldg-15_staff-99')
+  })
 })
