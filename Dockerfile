@@ -28,6 +28,11 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
 
+# ค่า Default เผื่อกรณีบนเซิร์ฟเวอร์ไม่ได้ส่ง .env เข้ามา
+ENV DATABASE_URL="postgresql://postgres:postgres@host.docker.internal:5432/bru_facility_evaluation?schema=public"
+ENV BRU_SSO_BASE_URL="https://sso.bru.ac.th"
+ENV JWT_SECRET="bru-facility-evaluation-secret-key-2026-production"
+
 # Install OpenSSL for Prisma engine on Alpine
 RUN apk add --no-cache openssl libc6-compat
 

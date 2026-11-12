@@ -2,25 +2,17 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: bru-fq-app:latest
     container_name: bru_fq_app
     restart: unless-stopped
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - PORT=3000
       - HOST=0.0.0.0
-      - DATABASE_URL=${DATABASE_URL}
-      - BRU_SSO_BASE_URL=${BRU_SSO_BASE_URL:-https://sso.bru.ac.th}
-      - BRU_SSO_API_KEY=${BRU_SSO_API_KEY}
-      - JWT_SECRET=${JWT_SECRET:-bru-facility-evaluation-secret-key-2026}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
-    env_file:
-      - .env
     # ช่วยให้เชื่อมต่อไปยัง PostgreSQL ที่รันบน Host เครื่องเดียวกันได้ผ่าน host.docker.internal
     extra_hosts:
       - "host.docker.internal:host-gateway"
