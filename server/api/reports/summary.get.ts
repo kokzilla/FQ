@@ -16,7 +16,11 @@ export default defineEventHandler(async (event) => {
   try {
     const dbAssessments = await prisma.assessment.findMany({
       include: {
-        building: true,
+        building: {
+          include: {
+            staffs: true
+          }
+        },
         assessor: true,
         scores: true
       },
@@ -37,10 +41,12 @@ export default defineEventHandler(async (event) => {
         roundId: d.roundId || 'round-2570',
         buildingId: d.buildingId,
         buildingName: d.building?.name || 'อาคาร',
+        buildingStaffs: d.building?.staffs || [],
         staffId: (d as any).staffId || null,
         responsibleStaffText: d.responsibleStaffText,
         assessorId: d.assessorId,
         assessorName: d.assessor?.fullName || 'ผู้ตรวจประเมิน',
+        assessorPosition: d.assessor?.positionName || 'กรรมการ',
         assessedAt: d.assessedAt.toISOString(),
         totalScoreObtained: d.totalScoreObtained,
         totalMaxScore: d.totalMaxScore,
@@ -69,10 +75,20 @@ export default defineEventHandler(async (event) => {
   // กรองเฉพาะการประเมินในรอบที่เลือก
   const currentAssessments = allAssessments.filter(a => (a.roundId || 'round-2570') === roundId)
 
+  // ลำดับความสำคัญของตำแหน่งกรรมการสำหรับจัดเรียงในตาราง
+  const positionRankMap: Record<string, number> = {
+    'ประธานกรรมการ': 1,
+    'รองประธานกรรมการ': 2,
+    'กรรมการ': 3,
+    'กรรมการและเลขานุการ': 4,
+    'กรรมการและผู้ช่วยเลขานุการ': 5
+  }
+
   // 1. คำนวณคะแนนเฉลี่ยรายข้อย่อยของแต่ละอาคาร (Building consensus)
   const buildingsMap: Record<string, {
     buildingId: string
     buildingName: string
+    registeredStaffs: any[]
     responsibleStaffList: Set<string>
     auditors: string[]
     evaluations: any[]
@@ -84,6 +100,7 @@ export default defineEventHandler(async (event) => {
       buildingsMap[bId] = {
         buildingId: a.buildingId,
         buildingName: a.buildingName,
+        registeredStaffs: a.buildingStaffs || [],
         responsibleStaffList: new Set(),
         auditors: [],
         evaluations: []
@@ -136,6 +153,96 @@ export default defineEventHandler(async (event) => {
 
     const urgentNotes = b.evaluations.map(e => e.urgentProblems).filter(Boolean).join('; ')
 
+    // จัดกลุ่มกรรมการและผู้รับผิดชอบที่กรรมการประเมินต่อท้ายชื่อกรรมการ
+    const auditorStaffMap: Record<string, Set<string>> = {}
+    for (const ev of b.evaluations) {
+      const aName = (ev.assessorName || 'ผู้ตรวจประเมิน').trim()
+      if (!auditorStaffMap[aName]) {
+        auditorStaffMap[aName] = new Set()
+      }
+      const sText = (ev.responsibleStaffText || '').trim()
+      if (sText && sText !== 'ไม่ระบุ') {
+        auditorStaffMap[aName].add(sText)
+      }
+    }
+
+    const auditorDetails = b.auditors.map((aName: string) => {
+      const staffSet = auditorStaffMap[aName]
+      const staffArray = staffSet ? Array.from(staffSet) : []
+      const staffStr = staffArray.length > 0 ? staffArray.join(', ') : ''
+      return {
+        name: aName,
+        staff: staffStr,
+        displayText: staffStr ? `${aName} (ผู้รับผิดชอบที่ประเมิน: ${staffStr})` : aName
+      }
+    })
+
+    // สร้างตาราง Matrix: หัวคอลัมน์คือผู้รับผิดชอบ และแถวคือกรรมการ (ตำแหน่ง + ชื่อ)
+    const staffNames = new Set<string>()
+    for (const ev of b.evaluations) {
+      const sName = (ev.responsibleStaffText || '').trim()
+      if (sName && sName !== 'ไม่ระบุ') {
+        staffNames.add(sName)
+      }
+    }
+    if (b.registeredStaffs && b.registeredStaffs.length > 0) {
+      for (const st of b.registeredStaffs) {
+        if (st.staffName && st.staffName.trim()) {
+          staffNames.add(st.staffName.trim())
+        }
+      }
+    }
+    if (staffNames.size === 0) {
+      staffNames.add('ไม่ระบุ')
+    }
+
+    const staffColumns = Array.from(staffNames).map(staffName => {
+      const matchedEvals = b.evaluations.filter(ev => {
+        const evStaff = (ev.responsibleStaffText || '').trim()
+        if (staffName === 'ไม่ระบุ') {
+          return !evStaff || evStaff === 'ไม่ระบุ'
+        }
+        return evStaff === staffName || (!evStaff && staffNames.size === 1)
+      })
+
+      const auditorMap = new Map<string, any>()
+      for (const ev of matchedEvals) {
+        const aKey = ev.assessorId || ev.assessorName
+        if (!auditorMap.has(aKey)) {
+          const pos = ev.assessorPosition || 'กรรมการ'
+          const name = ev.assessorName || 'ผู้ตรวจประเมิน'
+          auditorMap.set(aKey, {
+            assessorId: aKey,
+            position: pos,
+            name: name,
+            fullDisplay: `${pos} ${name}`,
+            assessedAt: ev.assessedAt,
+            percentage: ev.percentage
+          })
+        }
+      }
+
+      const auditors = Array.from(auditorMap.values()).sort((a, b) => {
+        const rankA = positionRankMap[a.position] || 99
+        const rankB = positionRankMap[b.position] || 99
+        if (rankA !== rankB) return rankA - rankB
+        return a.name.localeCompare(b.name, 'th')
+      })
+
+      return {
+        staffName,
+        auditors,
+        auditorCount: auditors.length
+      }
+    })
+
+    const maxRows = Math.max(...staffColumns.map(c => c.auditors.length), 0)
+    const committeeMatrix = {
+      buildingName: b.buildingName,
+      columns: staffColumns,
+      maxRows
+    }
+
     return {
       buildingId: b.buildingId,
       buildingName: b.buildingName,
@@ -144,6 +251,8 @@ export default defineEventHandler(async (event) => {
       responsibleStaffCount: Array.from(b.responsibleStaffList).filter(s => s && s !== 'ไม่ระบุ').length,
       committeeCount: b.auditors.length,
       auditors: b.auditors,
+      auditorDetails,
+      committeeMatrix,
       totalScoreObtained: Math.round(totalScoreSum * 10) / 10,
       totalMaxScore: maxScore,
       score: roundedScore,
@@ -242,6 +351,41 @@ export default defineEventHandler(async (event) => {
 
     const urgentNotes = cappedEvaluations.map(e => e.urgentProblems).filter(Boolean).join('; ')
 
+    // สร้าง committeeMatrix สำหรับผู้ปฏิบัติงานรายนี้ (1 คอลัมน์)
+    const staffAuditorMap = new Map<string, any>()
+    for (const ev of cappedEvaluations) {
+      const aKey = ev.assessorId || ev.assessorName
+      if (!staffAuditorMap.has(aKey)) {
+        const pos = ev.assessorPosition || 'กรรมการ'
+        const name = ev.assessorName || 'ผู้ตรวจประเมิน'
+        staffAuditorMap.set(aKey, {
+          assessorId: aKey,
+          position: pos,
+          name: name,
+          fullDisplay: `${pos} ${name}`,
+          assessedAt: ev.assessedAt,
+          percentage: ev.percentage
+        })
+      }
+    }
+    const staffSortedAuditors = Array.from(staffAuditorMap.values()).sort((a, b) => {
+      const rankA = positionRankMap[a.position] || 99
+      const rankB = positionRankMap[b.position] || 99
+      if (rankA !== rankB) return rankA - rankB
+      return a.name.localeCompare(b.name, 'th')
+    })
+    const committeeMatrix = {
+      buildingName: s.buildingName || '',
+      columns: [
+        {
+          staffName: s.staffName,
+          auditors: staffSortedAuditors,
+          auditorCount: staffSortedAuditors.length
+        }
+      ],
+      maxRows: staffSortedAuditors.length
+    }
+
     return {
       staffKey: s.staffKey,
       staffId: s.staffId,
@@ -250,6 +394,7 @@ export default defineEventHandler(async (event) => {
       buildingName: s.buildingName,
       committeeCount: cappedAuditors.length,
       auditors: cappedAuditors,
+      committeeMatrix,
       totalScoreObtained: Math.round(totalScoreSum * 10) / 10,
       totalMaxScore: maxScore,
       score: roundedScore,

@@ -736,7 +736,7 @@ const topThreePersonnel = computed(() => {
         items: []
       }
     }
-    scoreGroups[key].items.push(`${item.staffName} (${item.buildingName})`)
+    scoreGroups[key].items.push(`${formatStaffDisplayName(item.staffName)} (${item.buildingName})`)
   }
 
   const sorted = Object.values(scoreGroups).sort((a, b) => b.scoreVal - a.scoreVal)
@@ -769,15 +769,51 @@ function getRankTitleColor(rank: number) {
 
 function formatAssessorShort(name: string) {
   if (!name) return '-'
-  const clean = name.replace(/\(.*?\)/g, '').trim()
+  const clean = String(name).replace(/\(.*?\)/g, '').trim()
+  if (!clean || clean === '-') return '-'
+
+  const knownPrefixes = new Set([
+    'ศาสตราจารย์', 'ศ.', 'ศ.ดร.',
+    'รองศาสตราจารย์', 'รศ.', 'รศ.ดร.',
+    'ผู้ช่วยศาสตราจารย์', 'ผศ.', 'ผศ.ดร.',
+    'อาจารย์', 'อ.', 'อ.ดร.',
+    'ดร.', 'นายแพทย์', 'นพ.', 'แพทย์หญิง', 'พญ.',
+    'ว่าที่ร้อยตรี', 'ว่าที่ ร.ต.', 'ว่าที่ ร.ต. ดร.',
+    'นาย', 'นางสาว', 'นาง', 'น.ส.', 'ด.ช.', 'ด.ญ.'
+  ])
+
   const parts = clean.split(/\s+/).filter(Boolean)
   if (parts.length === 0) return '-'
+  if (parts.length === 1) return parts[0]
 
-  const titlePrefixes = ['ดร.', 'ผศ.', 'รศ.', 'ศ.', 'อ.', 'นาย', 'นาง', 'นางสาว', 'น.ส.', 'ผศ.ดร.', 'รศ.ดร.']
-  if (parts.length >= 2 && titlePrefixes.includes(parts[0])) {
-    return `${parts[0]} ${parts[1]}`
+  const prefixes: string[] = []
+  let idx = 0
+  while (idx < parts.length) {
+    const token = parts[idx]
+    if (knownPrefixes.has(token) || knownPrefixes.has(token + '.')) {
+      prefixes.push(token)
+      idx++
+    } else if (token === 'ว่าที่' && idx + 1 < parts.length && (parts[idx + 1] === 'ร.ต.' || parts[idx + 1] === 'ร้อยตรี')) {
+      prefixes.push(`${parts[idx]} ${parts[idx + 1]}`)
+      idx += 2
+    } else {
+      break
+    }
   }
-  return parts[0]
+
+  if (idx < parts.length) {
+    const firstName = parts[idx]
+    if (prefixes.length > 0) {
+      return `${prefixes.join(' ')} ${firstName}`
+    }
+    const embeddedMatch = parts[0].match(/^(นาย|นางสาว|นาง|น\.ส\.|ดร\.|ผศ\.|รศ\.|ศ\.|อ\.)(.+)$/)
+    if (embeddedMatch) {
+      return `${embeddedMatch[1]} ${embeddedMatch[2]}`
+    }
+    return firstName
+  }
+
+  return clean
 }
 
 function getItemGradeLabel(scoreStr: string) {
@@ -825,7 +861,8 @@ function formatStaffDisplayName(fullName: string): string {
     prev = str
     str = str.replace(prefixRegex, '').trim()
   }
-  return str
+  const parts = str.split(/\s+/).filter(Boolean)
+  return parts.length > 0 ? parts[0] : (str || '')
 }
 
 function editEvaluationItem(item: any) {

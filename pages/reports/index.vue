@@ -251,9 +251,14 @@
                   <td class="py-3 px-3.5 text-slate-600">
                     <button
                       type="button"
-                      @click="openAuditorsModal(b.buildingName, b.auditors)"
-                      class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 font-medium text-xs transition-colors border border-slate-200/80 cursor-pointer"
-                      title="คลิกเพื่อดูรายชื่อคณะกรรมการที่ตรวจ"
+                      @click="openAuditorsModal(b.buildingName, b.auditorDetails || b.auditors, b.committeeMatrix)"
+                      class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg font-medium text-xs transition-colors border cursor-pointer"
+                      :class="isBuildingAuditedFully(b)
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800'
+                        : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 hover:text-amber-900'"
+                      :title="isBuildingAuditedFully(b)
+                        ? 'คณะกรรมการประเมินครบ 5 ท่านขึ้นไปทุกคนแล้ว (คลิกเพื่อดูรายชื่อ)'
+                        : 'คณะกรรมการยังประเมินไม่ครบ 5 ท่าน (คลิกเพื่อดูรายชื่อ)'"
                     >
                       <span>👤 {{ b.committeeCount }} ท่าน</span>
                     </button>
@@ -520,9 +525,14 @@
                     <td class="py-3 px-3.5 text-slate-600">
                       <button
                         type="button"
-                        @click="openAuditorsModal(s.staffName + (s.buildingName ? ' (' + s.buildingName + ')' : ''), s.auditors)"
-                        class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 font-medium text-xs transition-colors border border-slate-200/80 cursor-pointer"
-                        title="คลิกเพื่อดูรายชื่อคณะกรรมการที่ประเมิน"
+                        @click="openAuditorsModal(s.staffName + (s.buildingName ? ' (' + s.buildingName + ')' : ''), s.auditors, s.committeeMatrix)"
+                        class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg font-medium text-xs transition-colors border cursor-pointer"
+                        :class="(s.committeeCount || 0) >= 5
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800'
+                          : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 hover:text-amber-900'"
+                        :title="(s.committeeCount || 0) >= 5
+                          ? 'ได้รับการประเมินครบ 5 ท่านขึ้นไปแล้ว (คลิกเพื่อดูรายชื่อ)'
+                          : 'ยังได้รับการประเมินไม่ครบ 5 ท่าน (คลิกเพื่อดูรายชื่อ)'"
                       >
                         <span>👤 {{ s.committeeCount }} ท่าน</span>
                       </button>
@@ -757,35 +767,133 @@
       </div>
 
       <!-- Modal: Committee Auditors Popup -->
-      <div v-if="showAuditorsModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div class="flex items-center space-x-2">
-              <span class="text-xl">👥</span>
+      <div v-if="showAuditorsModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-5xl xl:max-w-6xl w-full p-5 sm:p-7 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150 my-auto">
+          <!-- Modal Header -->
+          <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center space-x-3">
+              <span class="text-2xl p-2 rounded-2xl bg-indigo-50 text-indigo-600">👥</span>
               <div>
-                <h3 class="text-sm font-bold text-slate-900">คณะกรรมการที่ตรวจ</h3>
-                <p class="text-[11px] text-slate-500 line-clamp-1 max-w-[200px]">{{ selectedAuditorsTargetName }}</p>
+                <h3 class="text-base sm:text-lg font-bold text-slate-900">คณะกรรมการที่ตรวจ</h3>
+                <div class="flex items-center space-x-2 text-xs text-slate-500 mt-0.5">
+                  <span class="font-semibold text-indigo-700">{{ selectedAuditorsTargetName }}</span>
+                  <span v-if="selectedCommitteeMatrix?.columns?.length" class="text-slate-300">•</span>
+                  <span v-if="selectedCommitteeMatrix?.columns?.length" class="text-slate-600">
+                    ผู้รับผิดชอบ {{ selectedCommitteeMatrix.columns.length }} ท่าน
+                  </span>
+                </div>
               </div>
             </div>
             <button
               type="button"
               @click="showAuditorsModal = false"
-              class="text-slate-400 hover:text-slate-600 text-sm p-1 rounded-full hover:bg-slate-100 transition-colors"
+              class="text-slate-400 hover:text-slate-700 text-base p-1.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
             >
               ✕
             </button>
           </div>
 
-          <div class="space-y-2 py-1 max-h-64 overflow-y-auto">
+          <!-- Table View if Committee Matrix is available -->
+          <div v-if="selectedCommitteeMatrix && selectedCommitteeMatrix.columns && selectedCommitteeMatrix.columns.length > 0" class="space-y-2">
+            <div class="text-xs text-slate-500 flex items-center justify-between px-1">
+              <span>ตารางแสดงรายชื่อคณะกรรมการแยกตามผู้รับผิดชอบประจำอาคาร:</span>
+              <span class="text-[11px] text-slate-400">💡 เรียงลำดับตามตำแหน่งในคณะกรรมการ</span>
+            </div>
+
+            <div class="overflow-x-auto max-h-[65vh] overflow-y-auto rounded-2xl border border-slate-200 shadow-inner bg-slate-50/30">
+              <table class="w-full text-left border-collapse min-w-full">
+                <thead>
+                  <tr class="bg-slate-100/95 sticky top-0 z-10 shadow-sm backdrop-blur-sm">
+                    <th class="py-3 px-3.5 text-center text-xs font-bold text-slate-600 border-b border-r border-slate-200 w-14">
+                      ลำดับ
+                    </th>
+                    <th
+                      v-for="(col, colIdx) in selectedCommitteeMatrix.columns"
+                      :key="colIdx"
+                      class="py-3 px-4 text-xs sm:text-sm font-bold border-b border-r border-slate-200 last:border-r-0 min-w-[200px] max-w-[280px] bg-slate-100/95"
+                    >
+                      <div class="flex items-center justify-between mb-1">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          🧹 ผู้รับผิดชอบ #{{ colIdx + 1 }}
+                        </span>
+                        <span class="text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                          ตรวจแล้ว {{ col.auditorCount }} ท่าน
+                        </span>
+                      </div>
+                      <div class="text-slate-900 font-bold truncate text-base" :title="col.staffName">
+                        {{ formatStaffFirstName(col.staffName) }}
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                  <!-- Empty state when no auditors evaluated yet -->
+                  <tr v-if="selectedCommitteeMatrix.maxRows === 0">
+                    <td :colspan="selectedCommitteeMatrix.columns.length + 1" class="py-8 text-center text-slate-400 text-xs italic">
+                      ยังไม่มีข้อมูลการตรวจประเมินสำหรับอาคารนี้
+                    </td>
+                  </tr>
+
+                  <!-- Rows of Auditors -->
+                  <tr
+                    v-else
+                    v-for="rowIdx in selectedCommitteeMatrix.maxRows"
+                    :key="rowIdx"
+                    class="hover:bg-slate-50/80 transition-colors"
+                  >
+                    <!-- Row number -->
+                    <td class="py-3 px-3 text-center text-xs font-bold text-slate-400 border-r border-slate-100 bg-slate-50/40">
+                      {{ rowIdx }}
+                    </td>
+
+                    <!-- Cells for each staff column -->
+                    <td
+                      v-for="(col, cIdx) in selectedCommitteeMatrix.columns"
+                      :key="cIdx"
+                      class="py-2.5 px-3.5 text-xs sm:text-sm border-r border-slate-100 last:border-r-0 align-top"
+                    >
+                      <!-- When auditor exists for this row: แสดงเฉพาะ คำนำหน้าและชื่อเท่านั้น (ลบป้ายสถานะ) -->
+                      <div
+                        v-if="col.auditors[rowIdx - 1]"
+                        class="p-2.5 rounded-xl bg-slate-50 hover:bg-indigo-50/50 border border-slate-200/80 transition-colors flex items-center space-x-2.5"
+                      >
+                        <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                          {{ rowIdx }}
+                        </span>
+                        <div class="font-bold text-slate-800 text-xs sm:text-sm leading-snug truncate" :title="col.auditors[rowIdx - 1].name">
+                          {{ formatAssessorTitleAndName(col.auditors[rowIdx - 1].name) }}
+                        </div>
+                      </div>
+
+                      <!-- Empty slot -->
+                      <div v-else class="flex items-center justify-center py-4 text-slate-300 text-xs italic">
+                        -
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Fallback: List View if no matrix provided -->
+          <div v-else class="space-y-2 py-1 max-h-72 overflow-y-auto">
             <div
               v-for="(auditor, aIdx) in selectedAuditorsList"
               :key="aIdx"
-              class="flex items-center space-x-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs sm:text-sm text-slate-800"
+              class="flex items-start space-x-3 p-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs sm:text-sm text-slate-800"
             >
-              <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+              <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">
                 {{ aIdx + 1 }}
               </span>
-              <span class="font-medium">{{ auditor }}</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs sm:text-sm text-slate-900 leading-snug">
+                  <span class="font-bold">{{ formatAssessorTitleAndName(getAuditorName(auditor)) }}</span>
+                  <span v-if="getAuditorStaff(auditor)" class="text-indigo-700 font-medium ml-1">
+                    (ผู้รับผิดชอบที่ประเมิน: {{ formatStaffFirstName(getAuditorStaff(auditor)) }})
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div v-if="!selectedAuditorsList || selectedAuditorsList.length === 0" class="text-center py-4 text-xs text-slate-400">
@@ -793,11 +901,12 @@
             </div>
           </div>
 
-          <div class="pt-2 flex justify-end">
+          <!-- Modal Footer -->
+          <div class="pt-2 flex justify-end border-t border-slate-100">
             <button
               type="button"
               @click="showAuditorsModal = false"
-              class="px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors cursor-pointer"
+              class="px-5 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors cursor-pointer"
             >
               ปิด
             </button>
@@ -834,7 +943,10 @@
               <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                 {{ sIdx + 1 }}
               </span>
-              <span class="font-medium">{{ staff }}</span>
+              <div class="flex-1 min-w-0">
+                <span class="font-bold text-slate-900">{{ formatStaffFirstName(staff) }}</span>
+                <span v-if="staff !== formatStaffFirstName(staff)" class="text-xs text-slate-400 ml-1.5 font-normal">({{ staff }})</span>
+              </div>
             </div>
 
             <div v-if="!selectedStaffList || selectedStaffList.length === 0" class="text-center py-4 text-xs text-slate-400">
@@ -886,12 +998,133 @@ const currentColorCriteria = computed(() => {
 
 const showAuditorsModal = ref(false)
 const selectedAuditorsTargetName = ref('')
-const selectedAuditorsList = ref<string[]>([])
+const selectedAuditorsList = ref<any[]>([])
+const selectedCommitteeMatrix = ref<any>(null)
 
-function openAuditorsModal(targetName: string, auditors: string[]) {
+function openAuditorsModal(targetName: string, auditors?: any[], matrix?: any) {
   selectedAuditorsTargetName.value = targetName
   selectedAuditorsList.value = auditors || []
+  selectedCommitteeMatrix.value = matrix || null
   showAuditorsModal.value = true
+}
+
+/**
+ * แปลงชื่อผู้ประเมินให้แสดงเฉพาะ "คำนำหน้าและชื่อ" เท่านั้น (ไม่เอานามสกุล)
+ * เช่น "รองศาสตราจารย์ ดร. ศิราณี จุโฑปะมา" -> "รองศาสตราจารย์ ดร. ศิราณี"
+ */
+function formatAssessorTitleAndName(fullName: string): string {
+  if (!fullName) return '-'
+  const clean = String(fullName).replace(/\(.*?\)/g, '').trim()
+  if (!clean || clean === '-') return '-'
+
+  const knownPrefixes = new Set([
+    'ศาสตราจารย์', 'ศ.', 'ศ.ดร.',
+    'รองศาสตราจารย์', 'รศ.', 'รศ.ดร.',
+    'ผู้ช่วยศาสตราจารย์', 'ผศ.', 'ผศ.ดร.',
+    'อาจารย์', 'อ.', 'อ.ดร.',
+    'ดร.', 'นายแพทย์', 'นพ.', 'แพทย์หญิง', 'พญ.',
+    'ว่าที่ร้อยตรี', 'ว่าที่ ร.ต.', 'ว่าที่ ร.ต. ดร.',
+    'นาย', 'นางสาว', 'นาง', 'น.ส.', 'ด.ช.', 'ด.ญ.'
+  ])
+
+  const parts = clean.split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '-'
+  if (parts.length === 1) return parts[0]
+
+  const prefixes: string[] = []
+  let idx = 0
+  while (idx < parts.length) {
+    const token = parts[idx]
+    if (knownPrefixes.has(token) || knownPrefixes.has(token + '.')) {
+      prefixes.push(token)
+      idx++
+    } else if (token === 'ว่าที่' && idx + 1 < parts.length && (parts[idx + 1] === 'ร.ต.' || parts[idx + 1] === 'ร้อยตรี')) {
+      prefixes.push(`${parts[idx]} ${parts[idx + 1]}`)
+      idx += 2
+    } else {
+      break
+    }
+  }
+
+  if (idx < parts.length) {
+    const firstName = parts[idx]
+    if (prefixes.length > 0) {
+      return `${prefixes.join(' ')} ${firstName}`
+    }
+    const embeddedMatch = parts[0].match(/^(นาย|นางสาว|นาง|น\.ส\.|ดร\.|ผศ\.|รศ\.|ศ\.|อ\.)(.+)$/)
+    if (embeddedMatch) {
+      return `${embeddedMatch[1]} ${embeddedMatch[2]}`
+    }
+    return firstName
+  }
+
+  return clean
+}
+
+/**
+ * แปลงชื่อผู้รับผิดชอบให้แสดง "แค่ชื่อ" เท่านั้น (ตัดคำนำหน้าและนามสกุลออก)
+ * เช่น "นางประยงค์ นันกลาง" -> "ประยงค์"
+ */
+function formatStaffFirstName(name: string): string {
+  if (!name) return '-'
+  let str = String(name).replace(/\(.*?\)/g, '').trim()
+  if (!str || str === 'ไม่ระบุ' || str === 'ไม่ระบุผู้รับผิดชอบ') return 'ไม่ระบุ'
+
+  const prefixRegex = /^(?:ว่าที่\s*ร้อยตรี|ว่าที่\s*ร\.ต\.|ผศ\.\s*ดร\.|รศ\.\s*ดร\.|ศ\.\s*ดร\.|อาจารย์\s*ดร\.|อาจารย์\s*|ผศ\.|รศ\.|ศ\.|ดร\.|อ\.|นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.)\s*/i
+  let prev = ''
+  while (prev !== str) {
+    prev = str
+    str = str.replace(prefixRegex, '').trim()
+  }
+
+  const parts = str.split(/\s+/).filter(Boolean)
+  return parts.length > 0 ? parts[0] : (str || '-')
+}
+
+/**
+ * ตรวจสอบว่าผู้รับผิดชอบอาคารทุกคนถูกประเมินโดยผู้ประเมินครบ 5 คนหรือมากกว่าแล้วหรือไม่
+ */
+function isBuildingAuditedFully(b: any): boolean {
+  if (!b) return false
+  const matrix = b.committeeMatrix
+  if (matrix && Array.isArray(matrix.columns) && matrix.columns.length > 0) {
+    return matrix.columns.every((col: any) => (col.auditorCount || col.auditors?.length || 0) >= 5)
+  }
+  return (b.committeeCount || 0) >= 5
+}
+
+function getPositionBadgeClass(position: string): string {
+  if (!position) return 'bg-slate-100 text-slate-700 border-slate-200'
+  if (position.includes('ประธานกรรมการ') && !position.includes('รอง')) {
+    return 'bg-amber-100 text-amber-900 border-amber-300'
+  }
+  if (position.includes('รองประธาน')) {
+    return 'bg-purple-100 text-purple-900 border-purple-300'
+  }
+  if (position.includes('เลขานุการ')) {
+    return 'bg-sky-100 text-sky-900 border-sky-300'
+  }
+  return 'bg-indigo-50 text-indigo-700 border-indigo-200'
+}
+
+function getAuditorName(auditor: any): string {
+  if (!auditor) return '-'
+  if (typeof auditor === 'string') {
+    const match = auditor.match(/^(.*?)\s*\((?:ผู้รับผิดชอบ(?:ที่ประเมิน)?|ประเมิน):.*?\)$/)
+    if (match) return match[1].trim()
+    return auditor
+  }
+  return auditor.name || auditor.assessorName || auditor.displayText || '-'
+}
+
+function getAuditorStaff(auditor: any): string {
+  if (!auditor) return ''
+  if (typeof auditor === 'string') {
+    const match = auditor.match(/\((?:ผู้รับผิดชอบ(?:ที่ประเมิน)?|ประเมิน):\s*(.*?)\)/)
+    if (match) return match[1].trim()
+    return ''
+  }
+  return auditor.staff || auditor.staffText || ''
 }
 
 const showStaffModal = ref(false)
