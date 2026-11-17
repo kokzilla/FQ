@@ -528,10 +528,10 @@
                   @change="changeUserRole(u, ($event.target as HTMLSelectElement).value)"
                   class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 >
-                  <option value="ADMIN">🛡️ ผู้ดูแลระบบ (ADMIN)</option>
-                  <option value="AUDITOR">📋 คณะกรรมการ (AUDITOR)</option>
-                  <option value="SUPERVISOR">👁️ หัวหน้างาน (SUPERVISOR)</option>
-                  <option value="HOUSEKEEPER">🏢 ผู้รับผิดชอบ (HOUSEKEEPER)</option>
+                  <option value="ADMIN">🛡️ ผู้ดูแลระบบ</option>
+                  <option value="AUDITOR">📋 คณะกรรมการ</option>
+                  <option value="SUPERVISOR">👁️ หัวหน้างาน</option>
+                  <option value="HOUSEKEEPER">🏢 ผู้รับผิดชอบ</option>
                 </select>
 
                 <button
@@ -2101,10 +2101,10 @@
                 v-model="manualUserForm.role"
                 class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium"
               >
-                <option value="ADMIN">🛡️ ผู้ดูแลระบบ (ADMIN) - จัดการข้อมูลหลัก รอบประเมิน และสิทธิ์</option>
-                <option value="AUDITOR">📋 คณะกรรมการ (AUDITOR) - ตรวจประเมินอาคารและดูรายงาน</option>
-                <option value="SUPERVISOR">👁️ หัวหน้างาน (SUPERVISOR) - กำกับติดตามผล</option>
-                <option value="HOUSEKEEPER">🏢 ผู้รับผิดชอบ (HOUSEKEEPER) - แม่บ้าน/เจ้าหน้าที่ประจำอาคาร</option>
+                <option value="ADMIN">🛡️ ผู้ดูแลระบบ - จัดการข้อมูลหลัก รอบประเมิน และสิทธิ์</option>
+                <option value="AUDITOR">📋 คณะกรรมการ - ตรวจประเมินอาคารและดูรายงาน</option>
+                <option value="SUPERVISOR">👁️ หัวหน้างาน - กำกับติดตามผล</option>
+                <option value="HOUSEKEEPER">🏢 ผู้รับผิดชอบ - แม่บ้าน/เจ้าหน้าที่ประจำอาคาร</option>
               </select>
             </div>
 
@@ -2187,10 +2187,10 @@
                 v-model="editUserForm.role"
                 class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium"
               >
-                <option value="ADMIN">🛡️ ผู้ดูแลระบบ (ADMIN)</option>
-                <option value="AUDITOR">📋 คณะกรรมการ (AUDITOR)</option>
-                <option value="SUPERVISOR">👁️ หัวหน้างาน (SUPERVISOR)</option>
-                <option value="HOUSEKEEPER">🏢 ผู้รับผิดชอบ (HOUSEKEEPER)</option>
+                <option value="ADMIN">🛡️ ผู้ดูแลระบบ</option>
+                <option value="AUDITOR">📋 คณะกรรมการ</option>
+                <option value="SUPERVISOR">👁️ หัวหน้างาน</option>
+                <option value="HOUSEKEEPER">🏢 ผู้รับผิดชอบ</option>
               </select>
             </div>
 
