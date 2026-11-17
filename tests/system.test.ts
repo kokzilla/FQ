@@ -4,6 +4,7 @@ import { calculateEvaluation } from '../shared/types/evaluation'
 import { EVALUATION_CATEGORIES, EVALUATION_QUESTIONS } from '../shared/constants/questions'
 import { evaluateColorGrade, DEFAULT_COLOR_CRITERIA, getColorCriteriaSettings, saveColorCriteriaSettings } from '../server/utils/settings'
 import { createSignedSession, verifySignedSession } from '../server/utils/auth'
+import { replaceStaffNameInText, syncAuditorInMap } from '../server/utils/nameSync'
 
 describe('1. Unit Tests: Evaluation Calculation (UT-01 to UT-04)', () => {
   it('UT-01: คำนวณคะแนนเต็มทุกข้อ (35 ข้อ ได้ 5 คะแนนทั้งหมด)', () => {
@@ -246,5 +247,41 @@ describe('3. Integration & Data Layer Tests (IT-02 to IT-07)', () => {
     assert.notEqual(adminDraftKey, impersonatedAuditorDraftKey)
     assert.equal(adminDraftKey, 'bru_eval_draft_admin-user-01_round-2570_bldg-15_staff-99')
     assert.equal(impersonatedAuditorDraftKey, 'bru_eval_draft_auditor-88_round-2570_bldg-15_staff-99')
+  })
+
+  it('UT-07: Cascading Name Sync (การแทนที่ชื่อผู้รับผิดชอบและกรรมการข้ามจุดอย่างแม่นยำ)', () => {
+    // 1. Single & multi-staff replacement without corrupting partial substring
+    const single = replaceStaffNameInText('นางสาวสมใจ รักดี', 'นางสาวสมใจ รักดี', 'นางสมใจ รักดียิ่ง')
+    assert.equal(single.changed, true)
+    assert.equal(single.updated, 'นางสมใจ รักดียิ่ง')
+
+    const multi = replaceStaffNameInText('นางสาว ก, นางสาว กนกพร, นางสาว ข', 'นางสาว ก', 'นาง ก (แก้ไข)')
+    assert.equal(multi.changed, true)
+    assert.equal(multi.updated, 'นาง ก (แก้ไข), นางสาว กนกพร, นางสาว ข')
+
+    const noMatch = replaceStaffNameInText('นางสาว กนกพร', 'นางสาว ก', 'นาง ก')
+    assert.equal(noMatch.changed, false)
+    assert.equal(noMatch.updated, 'นางสาว กนกพร')
+
+    // 2. Sync auditor map across buildings
+    const sampleMap = {
+      'bldg-1': [
+        { userId: 'u-1', userlogin: 'olduser', fullName: 'อ.สมชาย เดิม' },
+        { userId: 'u-2', userlogin: 'other', fullName: 'อ.สมหญิง อื่น' }
+      ],
+      'bldg-2': [
+        { userlogin: 'olduser', fullName: 'อ.สมชาย เดิม' }
+      ]
+    }
+    const synced = syncAuditorInMap(
+      sampleMap,
+      { userId: 'u-1', oldUserlogin: 'olduser', oldFullName: 'อ.สมชาย เดิม' },
+      { userlogin: 'newuser', fullName: 'ดร.สมชาย ใหม่' }
+    )
+    assert.equal(synced.changed, true)
+    assert.equal(synced.updatedMap['bldg-1'][0].fullName, 'ดร.สมชาย ใหม่')
+    assert.equal(synced.updatedMap['bldg-1'][0].userlogin, 'newuser')
+    assert.equal(synced.updatedMap['bldg-1'][1].fullName, 'อ.สมหญิง อื่น')
+    assert.equal(synced.updatedMap['bldg-2'][0].fullName, 'ดร.สมชาย ใหม่')
   })
 })

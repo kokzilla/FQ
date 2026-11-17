@@ -499,7 +499,18 @@
               </div>
 
               <!-- Role Selector & Revoke Button -->
-              <div class="flex items-center space-x-2 flex-shrink-0">
+              <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                <!-- Edit User Profile Button -->
+                <button
+                  type="button"
+                  @click="openEditUserModal(u)"
+                  class="px-2.5 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-all flex items-center space-x-1 cursor-pointer"
+                  title="แก้ไขข้อมูล เช่น ชื่อ-สกุล ตำแหน่ง อีเมล"
+                >
+                  <span>✏️</span>
+                  <span>แก้ไข</span>
+                </button>
+
                 <!-- Impersonate Button -->
                 <button
                   type="button"
@@ -671,9 +682,17 @@
                 <span
                   v-for="s in b.staffs"
                   :key="s.id"
-                  class="inline-flex items-center bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg font-medium text-xs border border-indigo-100"
+                  class="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg font-medium text-xs border border-indigo-100"
                 >
-                  👤 {{ s.staffName }}
+                  <span>👤 {{ s.staffName }}</span>
+                  <button
+                    type="button"
+                    @click="openRenameStaffModal(s.staffName, b.id)"
+                    class="ml-0.5 text-indigo-400 hover:text-indigo-700 hover:bg-indigo-100 rounded px-1 transition-colors cursor-pointer"
+                    title="แก้ไขชื่อผู้รับผิดชอบ"
+                  >
+                    ✏️
+                  </button>
                 </span>
                 <span v-if="!b.staffs || b.staffs.length === 0" class="text-slate-400 italic text-xs">
                   (ยังไม่ได้ระบุแม่บ้าน)
@@ -686,9 +705,17 @@
                 <span
                   v-for="(aud, aIdx) in (b.auditors || [])"
                   :key="aud.userlogin || aud.userId || aIdx"
-                  class="inline-flex items-center bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg font-medium text-xs border border-emerald-200/80"
+                  class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg font-medium text-xs border border-emerald-200/80"
                 >
-                  📋 {{ aud.fullName }}
+                  <span>📋 {{ aud.fullName }}</span>
+                  <button
+                    type="button"
+                    @click="openEditAuditorFromChip(aud)"
+                    class="ml-0.5 text-emerald-500 hover:text-emerald-800 hover:bg-emerald-100 rounded px-1 transition-colors cursor-pointer"
+                    title="แก้ไขข้อมูลกรรมการ"
+                  >
+                    ✏️
+                  </button>
                 </span>
                 <span v-if="!b.auditors || b.auditors.length === 0" class="text-slate-400 italic text-xs">
                   (ยังไม่ได้กำหนดกรรมการประจำอาคาร)
@@ -1792,8 +1819,17 @@
                   <span>👤 {{ staff }}</span>
                   <button
                     type="button"
+                    @click="openRenameStaffModal(staff, editBuildingForm.id, idx)"
+                    class="text-indigo-400 hover:text-indigo-700 transition-colors ml-1 cursor-pointer"
+                    title="แก้ไขชื่อ-สกุล"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    type="button"
                     @click="editBuildingStaffList.splice(idx, 1)"
-                    class="text-indigo-400 hover:text-rose-600 transition-colors ml-1 font-bold"
+                    class="text-indigo-400 hover:text-rose-600 transition-colors ml-0.5 font-bold cursor-pointer"
+                    title="นำออกจากอาคารนี้"
                   >
                     ✕
                   </button>
@@ -2105,6 +2141,152 @@
                 class="px-5 py-2 rounded-xl text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
               >
                 บันทึกและแต่งตั้งสิทธิ์
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal: Edit Appointed User / Evaluator / Staff Profile -->
+      <div v-if="showEditUserModal" class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">✏️ แก้ไขข้อมูลผู้ประเมิน / บุคลากร</h3>
+              <p class="text-[11px] text-slate-500">ระบบจะซิงค์ชื่อใหม่ไปยังอาคารและรายงานการประเมินให้อัตโนมัติ</p>
+            </div>
+            <button type="button" @click="showEditUserModal = false" class="text-slate-400 hover:text-slate-600 text-sm cursor-pointer">✕</button>
+          </div>
+
+          <form @submit.prevent="saveEditedUser" class="space-y-3.5">
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อ-นามสกุล <span class="text-rose-500">*</span></label>
+              <input
+                v-model="editUserForm.fullName"
+                type="text"
+                required
+                placeholder="เช่น อาจารย์ ดร.ชาติวุฒิ ธนาพรสิทธิ์"
+                class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">Username (BRU SSO) <span class="text-rose-500">*</span></label>
+              <input
+                v-model="editUserForm.userlogin"
+                type="text"
+                required
+                placeholder="เช่น chartwut"
+                class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">สิทธิ์การใช้งานในระบบ <span class="text-rose-500">*</span></label>
+              <select
+                v-model="editUserForm.role"
+                class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium"
+              >
+                <option value="ADMIN">🛡️ ผู้ดูแลระบบ (ADMIN)</option>
+                <option value="AUDITOR">📋 คณะกรรมการ (AUDITOR)</option>
+                <option value="SUPERVISOR">👁️ หัวหน้างาน (SUPERVISOR)</option>
+                <option value="HOUSEKEEPER">🏢 ผู้รับผิดชอบ (HOUSEKEEPER)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">ตำแหน่ง / หน่วยงาน</label>
+              <input
+                v-model="editUserForm.positionName"
+                type="text"
+                placeholder="เช่น อาจารย์ / เจ้าหน้าที่ / แม่บ้าน"
+                class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">อีเมล</label>
+              <input
+                v-model="editUserForm.email"
+                type="email"
+                placeholder="เช่น name@bru.ac.th"
+                class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                @click="showEditUserModal = false"
+                class="px-4 py-2 rounded-xl text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                :disabled="isSavingUserEdit"
+                class="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                {{ isSavingUserEdit ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal: Rename Building Responsible Staff / Housekeeper -->
+      <div v-if="showRenameStaffModal" class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">✏️ แก้ไขชื่อผู้รับผิดชอบอาคาร</h3>
+              <p class="text-[11px] text-slate-500">ปรับปรุงชื่อ-สกุลผู้รับผิดชอบ/แม่บ้านให้ถูกต้อง</p>
+            </div>
+            <button type="button" @click="showRenameStaffModal = false" class="text-slate-400 hover:text-slate-600 text-sm cursor-pointer">✕</button>
+          </div>
+
+          <form @submit.prevent="saveRenamedStaff" class="space-y-3.5">
+            <div>
+              <label class="block text-xs font-medium text-slate-500 mb-1">ชื่อเดิม</label>
+              <div class="text-xs px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 font-medium border border-slate-200">
+                👤 {{ renameStaffForm.oldName }}
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อ-สกุล ใหม่ <span class="text-rose-500">*</span></label>
+              <input
+                v-model="renameStaffForm.newName"
+                type="text"
+                required
+                placeholder="พิมพ์ชื่อ-สกุลที่ถูกต้อง..."
+                class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+
+            <label class="flex items-start space-x-2 text-xs text-slate-600 bg-indigo-50/60 p-3 rounded-xl border border-indigo-100 cursor-pointer">
+              <input
+                v-model="renameStaffForm.syncAll"
+                type="checkbox"
+                class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+              />
+              <span>อัปเดตชื่อใหม่นี้ไปยังอาคารอื่นและประวัติรายงานการประเมินเดิมทั้งหมดด้วย (แนะนำ)</span>
+            </label>
+
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                @click="showRenameStaffModal = false"
+                class="px-4 py-2 rounded-xl text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                :disabled="isSavingStaffRename"
+                class="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                {{ isSavingStaffRename ? 'กำลังบันทึก...' : 'บันทึกชื่อใหม่' }}
               </button>
             </div>
           </form>
@@ -2675,6 +2857,148 @@ async function saveManualUser() {
     }
   } catch (err: any) {
     showToast(err?.data?.message || err?.message || 'ไม่สามารถแต่งตั้งสิทธิ์ได้', 'error')
+  }
+}
+
+// ==============================================
+// 2.1 EDIT USER PROFILE & CASCADING SYNC
+// ==============================================
+const showEditUserModal = ref(false)
+const isSavingUserEdit = ref(false)
+const editUserForm = reactive({
+  id: '',
+  userlogin: '',
+  fullName: '',
+  role: 'AUDITOR',
+  positionName: '',
+  email: ''
+})
+
+function openEditUserModal(user: any) {
+  editUserForm.id = user.id
+  editUserForm.userlogin = user.userlogin || ''
+  editUserForm.fullName = user.fullName || ''
+  editUserForm.role = user.role || 'AUDITOR'
+  editUserForm.positionName = user.positionName || ''
+  editUserForm.email = user.email || ''
+  showEditUserModal.value = true
+}
+
+function openEditAuditorFromChip(auditor: any) {
+  const found = appointedUsers.value.find((u: any) =>
+    (auditor.userId && u.id === auditor.userId) ||
+    (auditor.userlogin && u.userlogin === auditor.userlogin) ||
+    (auditor.fullName && u.fullName === auditor.fullName)
+  )
+  if (found) {
+    openEditUserModal(found)
+  } else {
+    showToast('ไม่พบข้อมูลบัญชีผู้ใช้นี้ในแท็บ 2 กรุณาแก้ไขจากแท็บ "สิทธิ์กรรมการและผู้ดูแล"', 'error')
+  }
+}
+
+async function saveEditedUser() {
+  if (!editUserForm.fullName.trim() || !editUserForm.userlogin.trim()) {
+    showToast('กรุณากรอกชื่อ-นามสกุล และ Username ให้ครบถ้วน', 'error')
+    return
+  }
+
+  isSavingUserEdit.value = true
+  try {
+    const res: any = await $fetch(`/api/users/${editUserForm.id}`, {
+      method: 'PUT',
+      body: {
+        fullName: editUserForm.fullName.trim(),
+        userlogin: editUserForm.userlogin.trim(),
+        role: editUserForm.role,
+        positionName: editUserForm.positionName.trim(),
+        email: editUserForm.email.trim()
+      }
+    })
+
+    if (res?.ok) {
+      showToast(`บันทึกข้อมูล "${editUserForm.fullName.trim()}" และซิงค์ข้อมูลเรียบร้อยแล้ว`)
+      showEditUserModal.value = false
+      await Promise.all([
+        fetchUsers(),
+        fetchBuildings(),
+        fetchStaffPool(),
+        fetchReportAssessments()
+      ])
+    }
+  } catch (err: any) {
+    showToast(err?.data?.message || err?.message || 'ไม่สามารถบันทึกการแก้ไขข้อมูลได้', 'error')
+  } finally {
+    isSavingUserEdit.value = false
+  }
+}
+
+// ==============================================
+// 2.2 RENAME BUILDING RESPONSIBLE STAFF & SYNC
+// ==============================================
+const showRenameStaffModal = ref(false)
+const isSavingStaffRename = ref(false)
+const renameStaffForm = reactive({
+  oldName: '',
+  newName: '',
+  buildingId: '',
+  chipIndex: -1,
+  syncAll: true
+})
+
+function openRenameStaffModal(staffName: string, buildingId = '', chipIndex = -1) {
+  renameStaffForm.oldName = staffName
+  renameStaffForm.newName = staffName
+  renameStaffForm.buildingId = buildingId
+  renameStaffForm.chipIndex = chipIndex
+  renameStaffForm.syncAll = true
+  showRenameStaffModal.value = true
+}
+
+async function saveRenamedStaff() {
+  const oldName = renameStaffForm.oldName.trim()
+  const newName = renameStaffForm.newName.trim()
+
+  if (!newName) {
+    showToast('กรุณาระบุชื่อ-สกุลใหม่', 'error')
+    return
+  }
+
+  if (oldName === newName) {
+    showRenameStaffModal.value = false
+    return
+  }
+
+  isSavingStaffRename.value = true
+  try {
+    const res: any = await $fetch('/api/buildings/rename-staff', {
+      method: 'PUT',
+      body: {
+        oldName,
+        newName,
+        buildingId: renameStaffForm.buildingId || undefined,
+        syncAll: renameStaffForm.syncAll
+      }
+    })
+
+    if (res?.ok) {
+      // Update inline chip list if opened from inside Edit Building modal
+      if (renameStaffForm.chipIndex >= 0 && renameStaffForm.chipIndex < editBuildingStaffList.value.length) {
+        editBuildingStaffList.value[renameStaffForm.chipIndex] = newName
+      }
+      showToast(`เปลี่ยนชื่อเป็น "${newName}" และซิงค์ข้อมูลเรียบร้อยแล้ว`)
+      showRenameStaffModal.value = false
+      await Promise.all([
+        fetchBuildings(),
+        fetchStaffPool(),
+        fetchUsers(),
+        fetchReportAssessments()
+      ])
+    }
+  } catch (err: any) {
+    showToast(err?.data?.message || err?.message || 'ไม่สามารถแก้ไขชื่อผู้รับผิดชอบได้', 'error')
+  } finally {
+    isSavingStaffRename.value = false
   }
 }
 
