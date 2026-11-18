@@ -2,13 +2,14 @@ import { defineEventHandler, readBody, getRouterParam, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { requireDatabase } from '../../utils/dbState'
 import { getBuildingAuditorsMap, saveBuildingAuditors } from '../../utils/settings'
+import { resolveBuildingStaffData } from '../../utils/buildingStaff'
 
 export default defineEventHandler(async (event) => {
   await requireDatabase()
 
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
-  const { code, name, floors, description, isActive, staffNames, auditors } = body
+  const { code, name, floors, description, isActive, staffNames, staffs, auditors } = body
 
   if (!id) {
     throw createError({ statusCode: 400, message: 'Missing building id' })
@@ -35,17 +36,24 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    if (Array.isArray(staffNames)) {
+    if (Array.isArray(staffs) || Array.isArray(staffNames)) {
+      const resolvedStaffs = await resolveBuildingStaffData(
+        { staffs, staffNames },
+        existing.staffs
+      )
+
       await prisma.buildingStaff.deleteMany({
         where: { buildingId: id }
       })
 
-      const validStaffs = staffNames.map((s: string) => s.trim()).filter((s: string) => s.length > 0)
-      if (validStaffs.length > 0) {
+      if (resolvedStaffs.length > 0) {
         await prisma.buildingStaff.createMany({
-          data: validStaffs.map((staffName: string) => ({
+          data: resolvedStaffs.map((s) => ({
             buildingId: id,
-            staffName
+            staffName: s.staffName,
+            userId: s.userId,
+            isPrimary: s.isPrimary,
+            phone: s.phone
           }))
         })
       }

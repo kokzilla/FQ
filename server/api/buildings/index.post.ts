@@ -2,18 +2,20 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { requireDatabase } from '../../utils/dbState'
 import { saveBuildingAuditors } from '../../utils/settings'
+import { resolveBuildingStaffData } from '../../utils/buildingStaff'
 
 export default defineEventHandler(async (event) => {
   await requireDatabase()
 
   const body = await readBody(event)
-  const { code, name, floors, description, staffNames, auditors } = body
+  const { code, name, floors, description, staffNames, staffs, auditors } = body
 
   if (!code || !name) {
     throw createError({ statusCode: 400, message: 'กรุณาระบุรหัสอาคารและชื่ออาคาร' })
   }
 
   try {
+    const resolvedStaffs = await resolveBuildingStaffData({ staffs, staffNames })
     const building = await prisma.building.create({
       data: {
         code: code.trim(),
@@ -21,9 +23,7 @@ export default defineEventHandler(async (event) => {
         floors: floors ? parseInt(floors) : 1,
         description: description || null,
         staffs: {
-          create: (staffNames || []).filter((s: string) => s.trim().length > 0).map((s: string) => ({
-            staffName: s.trim()
-          }))
+          create: resolvedStaffs
         }
       },
       include: { staffs: true }

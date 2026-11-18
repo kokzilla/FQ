@@ -6,16 +6,36 @@ export default defineEventHandler(async () => {
   await requireDatabase()
 
   try {
-    const dbStaffs = await prisma.buildingStaff.findMany({
-      select: { staffName: true },
-      distinct: ['staffName']
-    })
-    const staffPool: { staffName: string; source: 'DB' }[] = []
+    const [dbStaffs, housekeeperUsers] = await Promise.all([
+      prisma.buildingStaff.findMany({
+        select: { staffName: true, userId: true },
+        orderBy: { userId: 'desc' }
+      }),
+      prisma.user.findMany({
+        where: { role: 'HOUSEKEEPER' },
+        select: { id: true, userlogin: true, fullName: true }
+      })
+    ])
+
+    const seenNames = new Set<string>()
+    const staffPool: { staffName: string; userId: string | null; source: 'DB' | 'USER' }[] = []
+
     for (const s of dbStaffs) {
-      if (s.staffName && s.staffName.trim()) {
-        staffPool.push({ staffName: s.staffName.trim(), source: 'DB' })
+      const name = s.staffName?.trim()
+      if (name && !seenNames.has(name)) {
+        seenNames.add(name)
+        staffPool.push({ staffName: name, userId: s.userId ?? null, source: 'DB' })
       }
     }
+
+    for (const u of housekeeperUsers) {
+      const name = u.fullName?.trim()
+      if (name && !seenNames.has(name)) {
+        seenNames.add(name)
+        staffPool.push({ staffName: name, userId: u.id, source: 'USER' })
+      }
+    }
+
     return { ok: true, data: staffPool }
   } catch (err: any) {
     throw createError({
