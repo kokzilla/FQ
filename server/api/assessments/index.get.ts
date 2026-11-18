@@ -8,7 +8,9 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const { roundId, buildingId, assessorId, staffId } = query
 
-  const where: any = {}
+  const where: any = {
+    building: { isActive: true }
+  }
 
   if (roundId) {
     where.roundId = String(roundId)

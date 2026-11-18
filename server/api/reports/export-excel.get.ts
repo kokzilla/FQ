@@ -20,6 +20,9 @@ export default defineEventHandler(async (event) => {
   let allAssessments: any[] = []
   try {
     const dbAssessments = await prisma.assessment.findMany({
+      where: {
+        building: { isActive: true }
+      },
       include: { building: true, assessor: true, scores: true },
       orderBy: { createdAt: 'desc' }
     })

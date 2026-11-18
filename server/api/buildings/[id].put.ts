@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
-  const { code, name, floors, description, staffNames, auditors } = body
+  const { code, name, floors, description, isActive, staffNames, auditors } = body
 
   if (!id) {
     throw createError({ statusCode: 400, message: 'Missing building id' })
@@ -31,6 +31,7 @@ export default defineEventHandler(async (event) => {
         name: name ? name.trim() : existing.name,
         floors: floors !== undefined ? parseInt(floors) : existing.floors,
         description: description !== undefined ? description : existing.description,
+        isActive: typeof isActive === 'boolean' ? isActive : existing.isActive,
       }
     })
 

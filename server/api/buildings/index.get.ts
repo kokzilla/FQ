@@ -1,15 +1,18 @@
-import { defineEventHandler, createError } from 'h3'
+import { defineEventHandler, getQuery, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { requireDatabase } from '../../utils/dbState'
 import { getBuildingAuditorsMap } from '../../utils/settings'
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
   await requireDatabase()
+
+  const query = getQuery(event)
+  const includeInactive = query.includeInactive === 'true'
 
   try {
     const [buildings, auditorsMap] = await Promise.all([
       prisma.building.findMany({
-        where: { isActive: true },
+        where: includeInactive ? {} : { isActive: true },
         include: {
           staffs: {
             include: { user: true }

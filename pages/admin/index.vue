@@ -637,10 +637,48 @@
             </div>
           </div>
 
+          <!-- Status Filter Pills -->
+          <div class="flex flex-wrap items-center gap-2 pt-1">
+            <span class="text-xs font-semibold text-slate-600">สถานะอาคาร:</span>
+            <button
+              type="button"
+              @click="buildingStatusFilter = 'all'"
+              class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border"
+              :class="buildingStatusFilter === 'all'
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
+            >
+              ทั้งหมด ({{ buildings.length }})
+            </button>
+            <button
+              type="button"
+              @click="buildingStatusFilter = 'active'"
+              class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border"
+              :class="buildingStatusFilter === 'active'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                : 'bg-emerald-50/60 text-emerald-700 border-emerald-200 hover:bg-emerald-100/70'"
+            >
+              เปิดใช้งาน ({{ activeBuildingsCount }})
+            </button>
+            <button
+              type="button"
+              @click="buildingStatusFilter = 'inactive'"
+              class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border"
+              :class="buildingStatusFilter === 'inactive'
+                ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                : 'bg-rose-50/60 text-rose-700 border-rose-200 hover:bg-rose-100/70'"
+            >
+              ปิดใช้งาน ({{ inactiveBuildingsCount }})
+            </button>
+          </div>
+
           <!-- Result Count / Filter Indicator -->
           <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 pt-2 border-t border-slate-100 px-0.5">
             <div>
               พบอาคาร <strong>{{ filteredBuildings.length }}</strong> จากทั้งหมด <strong>{{ buildings.length }}</strong> แห่ง
+              <span v-if="buildingStatusFilter !== 'all'" class="text-emerald-700 font-medium ml-1.5">
+                • สถานะ: {{ buildingStatusFilter === 'active' ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
+              </span>
               <span v-if="searchBuildingName" class="text-indigo-600 font-medium ml-1.5">
                 • อาคาร: "{{ searchBuildingName }}"
               </span>
@@ -649,12 +687,12 @@
               </span>
             </div>
             <button
-              v-if="searchBuildingName || searchStaffName"
+              v-if="searchBuildingName || searchStaffName || buildingStatusFilter !== 'all'"
               type="button"
               @click="clearAllBuildingSearches"
               class="text-indigo-600 hover:text-indigo-700 hover:underline font-medium cursor-pointer"
             >
-              ✕ ล้างการค้นหาทั้งหมด
+              ✕ ล้างตัวกรองทั้งหมด
             </button>
           </div>
         </div>
@@ -664,15 +702,26 @@
           <div
             v-for="b in filteredBuildings"
             :key="b.id"
-            class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            class="rounded-2xl p-4 sm:p-5 border shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors"
+            :class="b.isActive === false
+              ? 'bg-slate-50/90 border-slate-200/80 opacity-85'
+              : 'bg-white border-slate-200/80'"
           >
             <div class="space-y-1.5">
-              <div class="flex items-center space-x-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-bold font-mono">
                   {{ b.code }}
                 </span>
-                <h4 class="text-base font-semibold text-slate-900">{{ b.name }}</h4>
+                <h4 class="text-base font-semibold" :class="b.isActive === false ? 'text-slate-500' : 'text-slate-900'">{{ b.name }}</h4>
                 <span v-if="b.floors" class="text-xs text-slate-400">({{ b.floors }} ชั้น)</span>
+                <span
+                  class="px-2 py-0.5 rounded-full text-[11px] font-semibold border"
+                  :class="b.isActive === false
+                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'"
+                >
+                  {{ b.isActive === false ? 'ปิดใช้งาน' : 'เปิดใช้งาน' }}
+                </span>
               </div>
               <p v-if="b.description" class="text-xs text-slate-500">{{ b.description }}</p>
               
@@ -723,7 +772,18 @@
               </div>
             </div>
 
-            <div class="flex items-center space-x-2 self-end sm:self-center flex-shrink-0">
+            <div class="flex flex-wrap items-center gap-2 self-end sm:self-center flex-shrink-0">
+              <button
+                type="button"
+                @click="toggleBuildingActive(b)"
+                class="px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors border cursor-pointer"
+                :class="b.isActive === false
+                  ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                  : 'text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200'"
+                :title="b.isActive === false ? 'เปิดใช้งานอาคารนี้' : 'ปิดใช้งานอาคารนี้ (ไม่นำมารวมสถิติ)'"
+              >
+                {{ b.isActive === false ? '✓ เปิดใช้งาน' : '⏸ ปิดใช้งาน' }}
+              </button>
               <button
                 type="button"
                 @click="openEditBuildingModal(b)"
@@ -1801,6 +1861,24 @@
                   class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
+            </div>
+
+            <!-- Building Active Status Toggle -->
+            <div class="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/70">
+              <div>
+                <p class="text-xs font-semibold text-slate-800">สถานะการใช้งานอาคาร (Enable / Disable)</p>
+                <p class="text-[11px] text-slate-500">หากปิดใช้งาน จะไม่แสดงผลในสถิติหน้า Dashboard, หน้าประเมิน และรายงาน</p>
+              </div>
+              <button
+                type="button"
+                @click="editBuildingForm.isActive = !editBuildingForm.isActive"
+                class="px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer flex-shrink-0"
+                :class="editBuildingForm.isActive
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-rose-50 text-rose-700 border-rose-200'"
+              >
+                {{ editBuildingForm.isActive ? '✓ เปิดใช้งาน' : '⏸ ปิดใช้งาน' }}
+              </button>
             </div>
 
             <!-- HYBRID STAFF PICKER FOR EDIT -->
@@ -3008,20 +3086,31 @@ async function saveRenamedStaff() {
 const buildings = ref<any[]>([])
 const searchBuildingName = ref('')
 const searchStaffName = ref('')
+const buildingStatusFilter = ref<'all' | 'active' | 'inactive'>('all')
+
+const activeBuildingsCount = computed(() => {
+  return buildings.value.filter((b: any) => b.isActive !== false).length
+})
+
+const inactiveBuildingsCount = computed(() => {
+  return buildings.value.filter((b: any) => b.isActive === false).length
+})
 
 function clearAllBuildingSearches() {
   searchBuildingName.value = ''
   searchStaffName.value = ''
+  buildingStatusFilter.value = 'all'
 }
 
-// Filtered buildings by building name/code/desc and/or staff/caretaker name
+// Filtered buildings by status, building name/code/desc and/or staff/caretaker name
 const filteredBuildings = computed(() => {
   const bQuery = searchBuildingName.value.trim().toLowerCase()
   const sQuery = searchStaffName.value.trim().toLowerCase()
 
-  if (!bQuery && !sQuery) return buildings.value
-
   return buildings.value.filter((b: any) => {
+    if (buildingStatusFilter.value === 'active' && b.isActive === false) return false
+    if (buildingStatusFilter.value === 'inactive' && b.isActive !== false) return false
+
     let matchesBuilding = true
     if (bQuery) {
       const nameMatch = b.name && String(b.name).toLowerCase().includes(bQuery)
@@ -3060,7 +3149,7 @@ const newStaffQuery = ref('')
 const newStaffSsoSuggestions = ref<any[]>([])
 
 // Edit Building State
-const editBuildingForm = reactive({ id: '', code: '', name: '', floors: 1, description: '' })
+const editBuildingForm = reactive({ id: '', code: '', name: '', floors: 1, description: '', isActive: true })
 const editBuildingStaffList = ref<string[]>([])
 const editBuildingAuditors = ref<{ userId?: string; userlogin: string; fullName: string }[]>([])
 const editAuditorSearchQuery = ref('')
@@ -3216,7 +3305,7 @@ function selectStaffForEditBuilding(staffName: string) {
 
 async function fetchBuildings() {
   try {
-    const res: any = await $fetch('/api/buildings')
+    const res: any = await $fetch('/api/buildings?includeInactive=true')
     if (res?.data) buildings.value = res.data
   } catch (e) {}
 }
@@ -3271,6 +3360,7 @@ function openEditBuildingModal(b: any) {
   editBuildingForm.name = b.name
   editBuildingForm.floors = b.floors || 1
   editBuildingForm.description = b.description || ''
+  editBuildingForm.isActive = b.isActive !== false
   editBuildingStaffList.value = (b.staffs || []).map((s: any) => s.staffName)
   editBuildingAuditors.value = Array.isArray(b.auditors)
     ? b.auditors.map((a: any) => ({
@@ -3284,6 +3374,22 @@ function openEditBuildingModal(b: any) {
   showEditBuildingModal.value = true
 }
 
+async function toggleBuildingActive(b: any) {
+  const nextActive = b.isActive === false
+  try {
+    const res: any = await $fetch(`/api/buildings/${b.id}`, {
+      method: 'PUT',
+      body: { isActive: nextActive }
+    })
+    if (res?.ok) {
+      await fetchBuildings()
+      showToast(nextActive ? `เปิดใช้งานอาคาร "${b.name}" แล้ว` : `ปิดใช้งานอาคาร "${b.name}" แล้ว`)
+    }
+  } catch (err: any) {
+    showToast(err?.data?.message || err?.message || 'ไม่สามารถเปลี่ยนสถานะอาคารได้', 'error')
+  }
+}
+
 async function updateBuilding() {
   if (!editBuildingForm.id || !editBuildingForm.code || !editBuildingForm.name) return
   try {
@@ -3294,6 +3400,7 @@ async function updateBuilding() {
         name: editBuildingForm.name,
         floors: editBuildingForm.floors,
         description: editBuildingForm.description,
+        isActive: editBuildingForm.isActive,
         staffNames: editBuildingStaffList.value,
         auditors: editBuildingAuditors.value
       }
